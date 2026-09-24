@@ -1,0 +1,15 @@
+{
+  "name": "terrarium-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for the Terrarium desktop app",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "terrarium-mcp": "terrarium-mcp.ts"
+  },
+  "scripts": {
+    "build": "bun build --compile --minify terrarium-mcp.ts --outfile ../dist/terrarium-mcp",
+    "start": "bun --bun terrarium-mcp.ts",
+    "doctor": "bun --bun terrarium-mcp.ts --doctor"
+  }
+}

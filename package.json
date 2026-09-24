@@ -1,0 +1,130 @@
+{
+  "name": "terrarium",
+  "version": "0.2.0",
+  "description": "Terrarium — an agent space for AI coding CLIs: run Claude Code, Codex & co. side by side in terminal panes, see who needs you, and watch the crew in a 3D office.",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:stable": "electron-vite build && electron-vite dev --rendererOnly",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "mcp:build": "bun build --compile --minify mcp/terrarium-mcp.ts --outfile dist/terrarium-mcp",
+    "mcp:serve": "bun --bun mcp/terrarium-mcp.ts",
+    "mcp:doctor": "bun --bun mcp/terrarium-mcp.ts --doctor",
+    "dist:win": "electron-vite build && bun build --compile --minify mcp/terrarium-mcp.ts --outfile dist/terrarium-mcp && electron-builder --win --x64 --publish never",
+    "dist:share": "pnpm dist:win && powershell -NoProfile -ExecutionPolicy Bypass -File installer/pack.ps1",
+    "release:win": "electron-vite build && bun build --compile --minify mcp/terrarium-mcp.ts --outfile dist/terrarium-mcp && electron-builder --win --x64 --publish always"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.186.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@react-three/drei": "^10.3.0",
+    "@react-three/fiber": "^9.1.0",
+    "@react-three/postprocessing": "^3.0.4",
+    "@tailwindcss/vite": "^4.0.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-serialize": "^0.14.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "0.19.0",
+    "@xterm/xterm": "^5.5.0",
+    "chokidar": "^5.0.0",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.4",
+    "croner": "^10.0.1",
+    "electron-updater": "^6.8.9",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.469.0",
+    "motion": "^11.15.0",
+    "node-pty": "^1.1.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "three": "^0.178.0",
+    "zustand": "^5.0.2"
+  },
+  "author": {
+    "name": "Ataberk Uygur",
+    "email": "ataberkuygur8@gmail.com"
+  },
+  "build": {
+    "appId": "app.terrarium.desktop",
+    "productName": "Terrarium",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**"
+    ],
+    "extraResources": [
+      {
+        "from": "src/main/voice/runtime",
+        "to": "voice-runtime",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "dist/terrarium-mcp.exe",
+        "to": "terrarium-mcp.exe"
+      }
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Terrarium-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Terrarium",
+      "artifactName": "Terrarium-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Ataberkuygur",
+        "repo": "terrarium",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Ataberkuygur/terrarium",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ataberkuygur/terrarium.git"
+  }
+}

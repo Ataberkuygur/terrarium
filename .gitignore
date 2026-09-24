@@ -1,0 +1,18 @@
+node_modules
+out
+dist
+release
+*.log
+.DS_Store
+nul
+
+# local tooling / agent state
+.serena
+.qoder
+.playwright-mcp
+.claude
+
+# personal machine notes & scratch
+agent-of-ataberk.md
+%TEMP%models.json
+*.orig.tsx

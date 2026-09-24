@@ -1,0 +1,16 @@
+{
+  "hotkey": "f9",
+  "mode": "smart",
+  "backend": "local",
+  "local_model": "large-v3-turbo",
+  "device": "cuda",
+  "compute_type": "float16",
+  "language": "tr",
+  "initial_prompt": "Türkçe yazılım geliştirme, terminal ve konsol komutları, kodlar ve prompt ifadeleri.",
+  "sound_effects": true,
+  "show_overlay": true,
+  "overlay_position": "top",
+  "paste_delay_ms": 30,
+  "groq_api_key": "",
+  "openai_api_key": ""
+}

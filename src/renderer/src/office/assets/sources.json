@@ -1,0 +1,42 @@
+{
+  "provider": "Poly Haven",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "files": [
+    {
+      "filename": "urban_courtyard_02_1k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/urban_courtyard_02_1k.hdr",
+      "md5": "06f863d6b18ec0df6aaeffe161e94498"
+    },
+    {
+      "filename": "wood_floor_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor/wood_floor_diff_1k.jpg",
+      "md5": "b7e927d2bf2f8f103820ff3890c8407c"
+    },
+    {
+      "filename": "wood_floor_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor/wood_floor_nor_gl_1k.jpg",
+      "md5": "620f174d2c09b579c5d02d37b2106668"
+    },
+    {
+      "filename": "wood_floor_rough_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor/wood_floor_rough_1k.jpg",
+      "md5": "36146634f1dbd1bc30cd071857584c10"
+    },
+    {
+      "filename": "concrete_floor_01_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_diff_1k.jpg",
+      "md5": "187065cfc20a35eb421eac6d4f38c58f"
+    },
+    {
+      "filename": "concrete_floor_01_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_nor_gl_1k.jpg",
+      "md5": "3862d48eb9495b302652cac825738876"
+    },
+    {
+      "filename": "concrete_floor_01_rough_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_rough_1k.jpg",
+      "md5": "3d374d86d7a43b93eed95d0d8957759c"
+    }
+  ]
+}

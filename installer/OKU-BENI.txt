@@ -1,0 +1,55 @@
+TERRARIUM — KURULUM
+===================
+
+1) Bu zip'i bir klasöre çıkar.
+2) KUR.cmd'ye çift tıkla.
+   - Windows "Bilgisayarınız korundu" derse: "Ek bilgi" → "Yine de çalıştır".
+     (Uygulama imzasız olduğu için bu uyarı çıkar, normaldir.)
+   - Betik şunları yapar: Git, Python ve Claude Code yoksa kurar, Terrarium'u
+     kurar, bir kez açar ve Terrarium MCP sunucusunu Claude Code'a ekler.
+3) Yeni bir terminal aç, "claude" yaz ve KENDİ Claude hesabınla giriş yap.
+4) Terrarium'u Başlat menüsünden aç. İlk ekranda kendi proje klasörünü seç.
+
+Tüm veriler senin bilgisayarında, %USERPROFILE%\.terrarium altında durur.
+Başka kimseyle paylaşılmaz; uygulama sıfırdan, boş başlar.
+
+Notlar
+- Ses/dikte (F9): ilk kullanımda Python paketlerini ve konuşma modelini
+  (~1.6 GB) indirir. NVIDIA ekran kartı varsa onu, yoksa işlemciyi kullanır.
+- Mobil kontrol: Windows Güvenlik Duvarı izin sorarsa, telefondan kontrol
+  isteniyorsa "Özel ağlar"a izin ver; istemiyorsan reddedebilirsin.
+- Güncelleme: yeni Terrarium-Setup-*.exe gelince KUR.cmd'yi tekrar çalıştır.
+
+
+KONTROL PROMPT'U (istersen Claude Code'a yapıştır)
+-------------------------------------------------
+KUR.cmd'den sonra bir terminalde "claude" açıp aşağıdakini yapıştır.
+Eksik kalan bir şey varsa Claude tamamlar.
+
+---8<---------------------------------------------------------------
+Terrarium masaüstü uygulamasını bu Windows bilgisayarında kurulumunu
+tamamlamama yardım et. Her adımı kontrol et, eksikse düzelt, sonunda
+kısa bir durum tablosu ver:
+
+1. Terrarium kurulu mu: %LOCALAPPDATA%\Programs\Terrarium\Terrarium.exe
+   Yoksa KUR.cmd'nin olduğu klasördeki Terrarium-Setup-*.exe'yi "/S" ile
+   kur.
+2. %USERPROFILE%\.terrarium\bin\terrarium-mcp.exe var mı? Yoksa Terrarium'u
+   bir kez başlat ve dosya oluşana kadar bekle (en fazla 60 sn).
+3. Terrarium MCP sunucusu Claude Code'a kayıtlı mı ("claude mcp list")?
+   Değilse:
+     claude mcp add -s user terrarium -- "%USERPROFILE%\.terrarium\bin\terrarium-mcp.exe"
+   Terrarium açıkken "terrarium-mcp.exe --doctor" çalıştırıp "api: OK"
+   gördüğünü doğrula.
+4. git ve Python 3.10+ kurulu mu? Yoksa winget ile kur
+   (Git.Git, Python.Python.3.12).
+5. İsteğe bağlı, kod gezinme için Serena MCP:
+   - uv yoksa: winget install astral-sh.uv
+   - uv tool install git+https://github.com/oraios/serena
+   - claude mcp add -s user serena -- "%USERPROFILE%\.local\bin\serena.exe" start-mcp-server --context claude-code --project-from-cwd --open-web-dashboard false
+6. Diğer ajan CLI'leri (Codex, Gemini vb.) istersem hangileri olduğunu
+   sor, sadece onayladıklarımı kur.
+
+Hiçbir hesap bilgisi, API anahtarı ya da şifre girme. Girişleri ben
+kendim yapacağım.
+---8<---------------------------------------------------------------

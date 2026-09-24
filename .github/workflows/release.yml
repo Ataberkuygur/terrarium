@@ -1,0 +1,58 @@
+# Every push to main ships a Windows release that installed copies pick up
+# through the in-app "New update available" notice (electron-updater reads
+# the latest GitHub Release). Version = major.minor from package.json +
+# the workflow run number as patch, so each push is strictly newer — bump
+# major/minor in package.json by hand when you want a bigger jump.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Set version
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json -Raw | ConvertFrom-Json).version.Split('.')
+          $version = "$($v[0]).$($v[1]).$env:GITHUB_RUN_NUMBER"
+          npm pkg set version=$version
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Releasing $version"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - name: Build & publish
+        run: pnpm release:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
