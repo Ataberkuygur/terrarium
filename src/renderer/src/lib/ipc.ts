@@ -39,6 +39,7 @@ declare global {
         guide: string
       } | null>
       cliSessions?: (cli: string, cwd: string) => Promise<CliSessionEntry[]>
+      suggestNetTopic?: (sessionId: string, agentTitles: string[]) => Promise<string | null>
       /** Agent CLI under each shell pid (absent until main/preload restart). */
       cliProcesses?: (pids: number[]) => Promise<Record<number, string | null>>
       /** pty root pid → resumable CLI session (absent until main/preload restart). */

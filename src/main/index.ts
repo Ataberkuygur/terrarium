@@ -20,6 +20,7 @@ import { cliBindings, resolveCliSession } from './cli-binding'
 import { startMobileServer, type MobileInfo } from './mobile'
 import { initVoiceService, stopVoiceService } from './voice'
 import { registerJevIpc } from './jev'
+import { suggestNetworkTopic } from './net-topic'
 import { initUpdater } from './updater'
 import { migrateDevLocalStorage } from './storage-migration'
 import QRCode from 'qrcode'
@@ -484,6 +485,12 @@ async function boot(): Promise<void> {
   ipcMain.handle('cli:bindings', (_e, entries: { pid: number; since: number }[]) => cliBindings(entries))
   ipcMain.handle('cli:resolve-session', (_e, cli: string, pid: number, since: number) =>
     resolveCliSession(cli, pid, since)
+  )
+  // topic for a network whose orchestrator never ran `tnet topic`
+  ipcMain.handle('net:suggest-topic', (_e, sessionId: string, agentTitles: string[]) =>
+    typeof sessionId === 'string'
+      ? suggestNetworkTopic(sessionId, Array.isArray(agentTitles) ? agentTitles : [])
+      : null
   )
 
   ipcMain.handle('shell:openExternal', (_e, url: string) => shell.openExternal(url))

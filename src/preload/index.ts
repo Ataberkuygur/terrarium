@@ -310,6 +310,9 @@ const api = {
       id: string
       cwd: string | null
     } | null>,
+  /** 2–4 word topic from an orchestrator's claude transcript (null = none yet). */
+  suggestNetTopic: (sessionId: string, agentTitles: string[]) =>
+    ipcRenderer.invoke('net:suggest-topic', sessionId, agentTitles) as Promise<string | null>,
   /** LAN URL + QR data-url for phone pairing (null when the server is off). */
   mobileInfo: () =>
     ipcRenderer.invoke('mobile:info') as Promise<{

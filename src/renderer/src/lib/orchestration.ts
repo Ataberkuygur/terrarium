@@ -1138,12 +1138,50 @@ async function restoreNodes(): Promise<void> {
   }
 }
 
+// ── auto topic ────────────────────────────────────────────────────────
+// The primer only ASKS the orchestrator to `tnet topic` its network, and
+// many never do. A network still unlabelled once its claude orchestrator
+// has a mission gets a topic suggested from that transcript (main's
+// net-topic: headless haiku). A user/orchestrator topic always wins —
+// only an empty one is ever filled.
+const TOPIC_EVERY_MS = 2 * 60_000
+const TOPIC_RETRY_MS = 10 * 60_000
+const TOPIC_MAX_TRIES = 6
+const topicTries = new Map<string, { session: string; at: number; tries: number }>()
+let topicBusy = false
+
+async function autoTopics(): Promise<void> {
+  const suggest = window.terrarium?.suggestNetTopic
+  if (!suggest || topicBusy) return
+  topicBusy = true
+  try {
+    for (const net of useOrch.getState().networks) {
+      if (net.topic) continue
+      const r = net.orchestrator.resume
+      const session = r?.cli === 'claude' ? r.id : undefined
+      if (!session) continue
+      const prev = topicTries.get(net.id)
+      const same = prev?.session === session
+      if (same && (prev.tries >= TOPIC_MAX_TRIES || Date.now() - prev.at < TOPIC_RETRY_MS)) continue
+      topicTries.set(net.id, { session, at: Date.now(), tries: (same ? prev.tries : 0) + 1 })
+      const topic = await suggest(session, net.agents.map((a) => a.title ?? '')).catch(() => null)
+      const now = useOrch.getState().networks.find((n) => n.id === net.id)
+      if (topic && now && !now.topic) useOrch.getState().setNetworkTopic(net.id, topic)
+    }
+  } finally {
+    topicBusy = false
+  }
+}
+
 void (async () => {
   await hostReady
   await Promise.race([restoreNodes(), new Promise((r) => setTimeout(r, RESTORE_TIMEOUT_MS))])
   useOrch.setState({ restoring: false })
   void refreshBindings()
   setInterval(() => void refreshBindings(), BIND_EVERY_MS)
+  // after the first binding pass has found the orchestrators' sessions
+  setTimeout(() => void autoTopics(), 15_000)
+  setInterval(() => void autoTopics(), TOPIC_EVERY_MS)
 })()
 
 export function nodeStatus(sid: string, now = Date.now()): NodeStatus {
