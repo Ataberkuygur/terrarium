@@ -10,6 +10,7 @@ import { useApp } from './store'
 import { useCanvasZoom } from './canvas-nav'
 import { noteTerminalOutput, noteTerminalTitle } from './live-cli'
 import { noteResumeBounce } from './resume-redirect'
+import { leafSpawnCommand, useLeafResume } from './workspace-resume'
 import type { ComponentProps } from 'react'
 
 // ── terminal output → typing ticks ───────────────────────────────────
@@ -70,6 +71,61 @@ function ZoomTerminal(props: ComponentProps<typeof Terminal>) {
 }
 
 /**
+ * Grid terminal pane. A pane whose pty died with the machine (reboot, app
+ * update) respawns its CLI in the session it was in (lib/workspace-resume);
+ * while launch is still resolving those sessions it holds off spawning, or
+ * it would race in with a fresh CLI.
+ */
+function WorkspaceTerminal({ leaf, projectRoot }: { leaf: PaneLeaf; projectRoot?: string }) {
+  const { active, restoring } = useLeafResume(leaf.id)
+  const sid = commandSessionId(leaf)
+  if (active && restoring) {
+    return (
+      <div className="grid h-full place-items-center text-[11px] text-t4">Oturum devam ettiriliyor…</div>
+    )
+  }
+  // trimmed like commandSessionId — a blank binding falls back to the
+  // platform default rather than spawning an empty program name.
+  const run = leafSpawnCommand(
+    leaf,
+    window.terrarium?.platform === 'win32' ? 'powershell.exe' : '/bin/sh'
+  )
+  // Env for agent CLIs: TERRARIUM_BROWSER_CMD is the tab-bridge-style
+  // /cmd endpoint driving the workspace's browser panes; TERRARIUM_SID
+  // lets the agent match `tabs` entries by boundSid to find the pane
+  // scoped to this terminal.
+  const env: Record<string, string> = { TERRARIUM_SID: sid }
+  const bridgeCmd = paneBridgeCmdUrl()
+  // same loopback /cmd endpoint under both names — BROWSER_CMD is the
+  // tab-bridge-compatible alias, WS_CMD advertises workspace control
+  if (bridgeCmd) {
+    env.TERRARIUM_BROWSER_CMD = bridgeCmd
+    env.TERRARIUM_WS_CMD = bridgeCmd
+  }
+  return (
+    <ZoomTerminal
+      bridge={getPtyBridge()}
+      sessionId={sid}
+      onData={(data) => {
+        terminalDataTick()
+        agentHeartbeat(leaf.agentId)
+        // which CLI is on screen now (typed `claude --resume` etc.)
+        noteTerminalOutput(leaf, sid)
+        // claude bounced a resume to its session's own dir — follow it
+        noteResumeBounce(leaf, sid, data, projectRoot)
+      }}
+      onTitle={(title) => noteTerminalTitle(sid, title)}
+      spawnOpts={{
+        sessionId: sid,
+        cwd: run.cwd?.trim() || leaf.cwd?.trim() || projectRoot || '.',
+        env,
+        ...splitCommand(run.command)
+      }}
+    />
+  )
+}
+
+/**
  * WorkspaceView leaf renderer — binds pane kinds to real content.
  * Terminal leaves get a live pty-backed xterm; the rest keep stub bodies
  * until file/browser/note content ships.
@@ -78,46 +134,7 @@ export function useRenderLeaf() {
   const projectRoot = useApp((s) => s.projects[0]?.rootPath)
   return (leaf: PaneLeaf) => {
     if (leaf.kind === 'terminal') {
-      const sid = commandSessionId(leaf)
-      // trimmed like commandSessionId — a blank binding falls back to the
-      // platform default rather than spawning an empty program name.
-      const bound = leaf.command?.trim()
-      // Env for agent CLIs: TERRARIUM_BROWSER_CMD is the tab-bridge-style
-      // /cmd endpoint driving the workspace's browser panes; TERRARIUM_SID
-      // lets the agent match `tabs` entries by boundSid to find the pane
-      // scoped to this terminal.
-      const env: Record<string, string> = { TERRARIUM_SID: sid }
-      const bridgeCmd = paneBridgeCmdUrl()
-      // same loopback /cmd endpoint under both names — BROWSER_CMD is the
-      // tab-bridge-compatible alias, WS_CMD advertises workspace control
-      if (bridgeCmd) {
-        env.TERRARIUM_BROWSER_CMD = bridgeCmd
-        env.TERRARIUM_WS_CMD = bridgeCmd
-      }
-      return (
-        <ZoomTerminal
-          bridge={getPtyBridge()}
-          sessionId={sid}
-          onData={(data) => {
-            terminalDataTick()
-            agentHeartbeat(leaf.agentId)
-            // which CLI is on screen now (typed `claude --resume` etc.)
-            noteTerminalOutput(leaf, sid)
-            // claude bounced a resume to its session's own dir — follow it
-            noteResumeBounce(leaf, sid, data, projectRoot)
-          }}
-          onTitle={(title) => noteTerminalTitle(sid, title)}
-          spawnOpts={{
-            sessionId: sid,
-            cwd: leaf.cwd?.trim() || projectRoot || '.',
-            env,
-            ...splitCommand(
-              bound ||
-                (window.terrarium?.platform === 'win32' ? 'powershell.exe' : '/bin/sh')
-            )
-          }}
-        />
-      )
+      return <WorkspaceTerminal leaf={leaf} projectRoot={projectRoot} />
     }
     if (leaf.kind === 'browser') {
       return <BrowserPane leaf={leaf} />
