@@ -94,6 +94,20 @@ const MIN_FIT_COLS = 10
 const MIN_FIT_ROWS = 2
 /** Host smaller than this (CSS px) is treated as hidden / unmeasurable. */
 const MIN_HOST_PX = 16
+
+// ── pty size ownership ───────────────────────────────────────────────
+// One session can be on screen in several views at once (workspace pane +
+// focus dock, orchestration card, a remount overlapping its predecessor),
+// but the pty has ONE size. Each view used to dedupe against what IT last
+// sent, so once another view resized the pty the first never re-sent its
+// own grid — the TUI kept laying out for the other width and every line
+// wrapped mid-word. The last size sent per session lives here instead, and
+// the view being used (focused / typed into / the one left standing when
+// another unmounts) claims the pty for its own grid.
+const ptySizes = new Map<string, { cols: number; rows: number }>()
+/** Size claimers per session, most recently mounted last. */
+const sizeClaimers = new Map<string, Array<() => void>>()
+
 let fontBumps: Record<string, number> | null = null
 
 function bumps(): Record<string, number> {
@@ -643,7 +657,11 @@ export function Terminal({
     ]
 
     const inputSub = term.onData((data) => {
-      if (!replaying && !cancelled) bridge.write(sid, data)
+      if (replaying || cancelled) return
+      // typing claims the pty for this grid — but not auto-answers to TUI
+      // queries from a view nobody is looking at
+      if (el.contains(document.activeElement)) claimSize()
+      bridge.write(sid, data)
     })
     const titleSub = term.onTitleChange((title) => {
       if (!cancelled) onTitle?.(title)
@@ -652,19 +670,25 @@ export function Terminal({
     // xterm every frame, but the CLI only gets the final size — one
     // redraw instead of a storm of half-drawn frames
     let ptyResizeTimer: ReturnType<typeof setTimeout> | undefined
-    let sentCols = 0
-    let sentRows = 0
-    const resizeSub = term.onResize(({ cols, rows }) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => snapRef.current?.()))
+    /** Hand the pty this view's grid unless it already has it (see ptySizes). */
+    const claimSize = () => {
+      clearTimeout(ptyResizeTimer)
+      const { cols, rows } = term
       // never hand the pty a degenerate grid (see safeFit)
       if (cancelled || cols < MIN_FIT_COLS || rows < MIN_FIT_ROWS) return
+      const cur = ptySizes.get(sid)
+      if (cur && cur.cols === cols && cur.rows === rows) return
+      ptySizes.set(sid, { cols, rows })
+      bridge.resize(sid, cols, rows)
+    }
+    const claimers = sizeClaimers.get(sid) ?? []
+    claimers.push(claimSize)
+    sizeClaimers.set(sid, claimers)
+    const resizeSub = term.onResize(({ cols, rows }) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => snapRef.current?.()))
+      if (cancelled || cols < MIN_FIT_COLS || rows < MIN_FIT_ROWS) return
       clearTimeout(ptyResizeTimer)
-      ptyResizeTimer = setTimeout(() => {
-        if (cancelled || (cols === sentCols && rows === sentRows)) return
-        sentCols = cols
-        sentRows = rows
-        bridge.resize(sid, cols, rows)
-      }, 90)
+      ptyResizeTimer = setTimeout(claimSize, 90)
     })
 
     // Device-pixel snap. At fractional devicePixelRatios (125% Windows
@@ -769,7 +793,11 @@ export function Terminal({
       heal(false)
     }, 2000)
     // focusing a pane always repaints it — the user's "click to fix"
-    const onFocusIn = () => requestAnimationFrame(() => heal(true))
+    const onFocusIn = () =>
+      requestAnimationFrame(() => {
+        claimSize()
+        heal(true)
+      })
     el.addEventListener('focusin', onFocusIn)
     // GPU work can be dropped while the window is hidden/minimised
     const onVisibility = () => {
@@ -828,9 +856,18 @@ export function Terminal({
     // Attach to an existing session; otherwise spawn. If spawn reports
     // the id already running (StrictMode double-mount, view remount),
     // fall back to attach — the replay repaints state anyway.
+    // The pty's real size (another view, the mobile remote or the last app
+    // run may have left it elsewhere) — re-lay the TUI out for this grid,
+    // which also repaints over a replay recorded at another width.
+    const syncSize = (info: Awaited<ReturnType<typeof attachOwn>> | null) => {
+      if (!info || info.status !== 'running' || cancelled) return
+      ptySizes.set(sid, { cols: info.cols, rows: info.rows })
+      claimSize()
+    }
     const connect = async () => {
       if (sessionId) {
         const info = await attachOwn().catch(() => null)
+        syncSize(info)
         // Exited/dead stubs linger in the supervisor — a bound pane's
         // command is what it RUNS, so respawn rather than replay a corpse
         // (otherwise re-resuming a session shows its dead tail forever).
@@ -848,9 +885,13 @@ export function Terminal({
     const doSpawn = async () => {
       if (!spawnOpts || cancelled) return
       try {
-        await bridge.spawn({ ...spawnOpts, cols: term.cols, rows: term.rows })
+        const { cols, rows } = term
+        ptySizes.set(sid, { cols, rows })
+        await bridge.spawn({ ...spawnOpts, cols, rows })
       } catch {
-        if (!cancelled) await attachOwn().catch(() => undefined)
+        // spawn refused (already running) — its size is not ours
+        ptySizes.delete(sid)
+        if (!cancelled) syncSize(await attachOwn().catch(() => null))
       }
     }
     void connect()
@@ -858,6 +899,12 @@ export function Terminal({
     return () => {
       cancelled = true
       clearTimeout(ptyResizeTimer)
+      // hand the pty back to a view still showing this session (after any
+      // remount in the same commit has registered, so that one wins)
+      const rest = (sizeClaimers.get(sid) ?? []).filter((c) => c !== claimSize)
+      if (rest.length) sizeClaimers.set(sid, rest)
+      else sizeClaimers.delete(sid)
+      if (rest.length) setTimeout(() => sizeClaimers.get(sid)?.at(-1)?.(), 0)
       clearInterval(snapTimer)
       window.removeEventListener('terrarium:layout-settled', onLayoutSettled)
       window.removeEventListener('resize', onLayoutSettled)
