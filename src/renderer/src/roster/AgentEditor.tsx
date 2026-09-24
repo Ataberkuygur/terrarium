@@ -12,7 +12,7 @@ export interface AgentEditorProps {
 }
 
 const inputCls =
-  'w-full rounded-md border border-[var(--border-default)] bg-n2 px-3 py-2 text-[13px] text-t1 placeholder:text-t4 outline-none focus:border-[var(--border-strong)] transition-colors'
+  'w-full rounded-lg border border-[var(--border-default)] bg-n1 px-3 py-2 text-[13px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] placeholder:text-t4 outline-none hover:border-[var(--border-strong)] focus:border-[rgba(245,165,36,0.45)] transition-colors'
 
 function deskLabel(deskId: string | undefined): string {
   if (!deskId) return 'Auto-assigned on save'
@@ -54,12 +54,12 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onCancel}>
-      <div className="absolute inset-0 bg-black/55" />
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[3px]" />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={agent.id ? 'Edit agent' : 'New agent'}
-        className="glass shadow-lg-dark relative w-[440px] max-w-[92vw] rounded-xl"
+        className="pop-surface pop-in relative flex max-h-[88vh] w-[460px] max-w-[92vw] flex-col overflow-hidden rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <style>{`
@@ -69,14 +69,14 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
             background: #fff; border: 2px solid rgba(0,0,0,0.45); box-shadow: 0 1px 4px rgba(0,0,0,0.5); cursor: pointer; }
         `}</style>
 
-        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-3.5">
-          <h2 className="text-[13.5px] font-medium text-t1">
+        <div className="pane-head flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-5">
+          <h2 className="text-[13.5px] font-semibold tracking-[-0.01em] text-t1">
             {agent.id ? 'Edit agent' : 'New agent'}
           </h2>
           <kbd className="kbd">esc</kbd>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="scroll-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {/* name */}
           <div>
             <label htmlFor="agent-name" className="micro-label mb-1.5 block">
@@ -116,19 +116,19 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
                     className={clsx(
                       'rounded-lg border px-2.5 py-2 text-left transition-colors',
                       sel
-                        ? 'border-[var(--border-strong)] bg-n4'
-                        : 'border-[var(--border-subtle)] hover:border-[var(--border-default)] hover:bg-n3'
+                        ? 'border-[rgba(245,165,36,0.4)] bg-accent-subtle shadow-[inset_0_1px_0_rgba(255,220,160,0.05)]'
+                        : 'border-[var(--border-subtle)] bg-n2 hover:border-[var(--border-default)] hover:bg-n4'
                     )}
                   >
                     <span
                       className={clsx(
                         'block text-[12px] font-medium',
-                        sel ? 'text-t1' : 'text-t2'
+                        sel ? 'text-accent' : 'text-t2'
                       )}
                     >
                       {ROLE_INFO[r].label}
                     </span>
-                    <span className="block text-[10.5px] leading-snug text-t4">
+                    <span className="mt-0.5 block text-[10.5px] leading-snug text-t3">
                       {ROLE_INFO[r].blurb}
                     </span>
                   </button>
@@ -140,7 +140,7 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
           {/* domain — compact segmented row, blurb of the selected one below */}
           <div>
             <span className="micro-label mb-1.5 block">Domain</span>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Domain">
+            <div className="seg-track flex-wrap gap-0.5" role="group" aria-label="Domain">
               {DOMAIN_ORDER.map((d) => {
                 const sel = d === domain
                 return (
@@ -151,10 +151,10 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
                     aria-pressed={sel}
                     title={DOMAIN_INFO[d].blurb}
                     className={clsx(
-                      'rounded-md border px-2.5 py-1.5 text-[11.5px] transition-colors',
+                      'h-[26px] rounded-[7px] px-2.5 text-[11.5px] font-medium transition-colors',
                       sel
-                        ? 'border-[var(--border-strong)] bg-n4 text-t1'
-                        : 'border-[var(--border-subtle)] text-t3 hover:border-[var(--border-default)] hover:bg-n3 hover:text-t2'
+                        ? 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                        : 'text-t3 hover:text-t1'
                     )}
                   >
                     {DOMAIN_INFO[d].label}
@@ -162,7 +162,7 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
                 )
               })}
             </div>
-            <p className="mt-1.5 text-[10.5px] leading-snug text-t4">
+            <p className="mt-1.5 text-[11px] leading-snug text-t3">
               {DOMAIN_INFO[domain].blurb}
             </p>
           </div>
@@ -198,7 +198,9 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
                       style={{
                         background: `hsl(${h} 45% 42%)`,
                         boxShadow:
-                          h === hue ? '0 0 0 2px var(--color-n1), 0 0 0 3.5px var(--color-t1)' : undefined
+                          h === hue
+                            ? '0 0 0 2px var(--color-popover), 0 0 0 3.5px var(--color-t1)'
+                            : 'inset 0 1px 0 rgba(255,255,255,0.18)'
                       }}
                     >
                       {h === hue && <Check size={11} className="text-white" strokeWidth={3} />}
@@ -216,8 +218,8 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
                 />
               </div>
               <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold text-white"
-                style={{ background: `hsl(${hue} 45% 42%)` }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_1px_rgba(0,0,0,0.25),0_2px_6px_rgba(0,0,0,0.35)]"
+                style={{ background: `linear-gradient(145deg, hsl(${hue} 50% 50%), hsl(${hue} 45% 38%))` }}
               >
                 {initial}
               </span>
@@ -225,17 +227,17 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
           </div>
 
           {/* desk assignment — read-only readout */}
-          <div className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-n2 px-3 py-2">
+          <div className="flex h-9 items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-n1/60 px-3">
             <span className="micro-label">Desk</span>
             <span className="text-[12px] text-t3">{deskLabel(agent.deskId)}</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] px-5 py-3.5">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-n1/40 px-5 py-3">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md px-3 py-1.5 text-[12.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
+            className="flex h-8 items-center rounded-lg px-3 text-[12.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
             Cancel
           </button>
@@ -243,7 +245,7 @@ export function AgentEditor({ agent, onSave, onCancel }: AgentEditorProps) {
             type="button"
             onClick={save}
             disabled={!valid}
-            className="rounded-md bg-t1 px-3.5 py-1.5 text-[12.5px] font-medium text-n1 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="btn-accent-soft flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
           >
             Save agent
           </button>

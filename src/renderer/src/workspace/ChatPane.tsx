@@ -139,12 +139,12 @@ export function ChatPane({ leaf }: { leaf: PaneLeaf }) {
     const Icon = meta.icon
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 select-none">
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-n3 p-3 text-t4">
-          <Icon size={18} strokeWidth={1.5} />
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-default)] bg-gradient-to-b from-n4 to-n3 text-t3 shadow-[var(--shadow-card)]">
+          <Icon size={18} strokeWidth={1.6} />
         </div>
         <div className="text-center">
-          <p className="text-[13px] font-medium text-t2">{meta.empty}</p>
-          <p className="mx-auto mt-1 max-w-[220px] text-[11.5px] leading-relaxed text-t4">
+          <p className="text-[13px] font-medium tracking-[-0.01em] text-t1">{meta.empty}</p>
+          <p className="mx-auto mt-1 max-w-[230px] text-[12px] leading-relaxed text-t3">
             {meta.hint}
           </p>
         </div>
@@ -155,7 +155,7 @@ export function ChatPane({ leaf }: { leaf: PaneLeaf }) {
   return (
     <div className="flex h-full w-full flex-col">
       {/* presence line — status dot + current card, under the pane header */}
-      <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-[var(--border-subtle)] px-3 select-none">
+      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] bg-n2/60 px-3 select-none">
         <StatusDot status={agent.status} size={6} />
         <span className="truncate text-[11px] text-t3">
           {task ? `working on ${task.title}` : STATUS_TEXT[agent.status]}
@@ -166,10 +166,10 @@ export function ChatPane({ leaf }: { leaf: PaneLeaf }) {
       {/* thread */}
       <div
         ref={scrollRef}
-        className="scroll-thin flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-2.5"
+        className="scroll-thin flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 py-3"
       >
         {messages.length === 0 && (
-          <p className="m-auto text-[11.5px] text-t4 select-none">
+          <p className="m-auto text-[12px] text-t4 select-none">
             No messages yet — say hello.
           </p>
         )}
@@ -183,19 +183,21 @@ export function ChatPane({ leaf }: { leaf: PaneLeaf }) {
           >
             <div
               className={clsx(
-                'rounded-lg px-2.5 py-1.5 text-[12.5px] leading-snug break-words whitespace-pre-wrap',
-                m.out ? 'bg-[var(--color-accent-subtle)] text-t1' : 'bg-n3 text-t2'
+                'rounded-xl border px-3 py-1.5 text-[12.5px] leading-[18px] break-words whitespace-pre-wrap',
+                m.out
+                  ? 'rounded-br-[4px] border-[rgba(245,165,36,0.22)] bg-[var(--color-accent-subtle)] text-t1'
+                  : 'rounded-bl-[4px] border-[var(--border-subtle)] bg-n3 text-t2'
               )}
             >
               {m.text}
             </div>
-            <span className="tnum px-0.5 text-[9.5px] text-t4">{timeAgo(m.at)}</span>
+            <span className="tnum px-1 text-[9.5px] text-t4">{timeAgo(m.at)}</span>
           </div>
         ))}
       </div>
 
       {/* composer — Enter sends, Shift+Enter newline */}
-      <div className="flex shrink-0 items-end gap-1.5 border-t border-[var(--border-subtle)] bg-n2 px-2 py-1.5">
+      <div className="flex shrink-0 items-end gap-1.5 border-t border-[var(--border-subtle)] bg-n2 px-2 py-2">
         <textarea
           ref={inputRef}
           rows={1}
@@ -212,14 +214,14 @@ export function ChatPane({ leaf }: { leaf: PaneLeaf }) {
               send()
             }
           }}
-          className="scroll-thin max-h-[88px] min-w-0 flex-1 resize-none rounded-md bg-transparent px-1.5 py-1 text-[12.5px] leading-[18px] text-t1 outline-none placeholder:text-t4"
+          className="scroll-thin max-h-[88px] min-w-0 flex-1 resize-none rounded-lg border border-[var(--border-default)] bg-n1 px-2.5 py-[5px] text-[12.5px] leading-[18px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)]"
         />
         <button
           type="button"
           onClick={send}
           disabled={!draft.trim()}
           title={`Send to ${agent.name}`}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-accent transition-colors hover:bg-n4 disabled:pointer-events-none disabled:opacity-30"
+          className="btn-accent-soft flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg disabled:pointer-events-none disabled:opacity-30"
         >
           <SendHorizontal size={13} />
         </button>

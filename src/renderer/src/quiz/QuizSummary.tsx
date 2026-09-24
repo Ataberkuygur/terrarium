@@ -48,28 +48,29 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
   return (
     <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto py-2">
       {/* ── Score & Trophy Hero ── */}
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-n2 p-6 text-center shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-done)] to-[var(--color-info)]" />
+      <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-[var(--border-default)] bg-raised px-6 pt-8 pb-6 text-center shadow-[var(--shadow-card)]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(245,165,36,0.14),transparent)]" />
 
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-base text-[var(--color-accent)] shadow-inner mb-3">
-          <Trophy size={28} strokeWidth={1.75} />
+        <div className="relative mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(245,165,36,0.28)] bg-accent-subtle text-accent shadow-[inset_0_1px_0_rgba(255,220,160,0.1),0_8px_24px_-8px_rgba(245,165,36,0.4)]">
+          <Trophy size={26} strokeWidth={1.75} />
         </div>
 
-        <span className={clsx('text-[13px] font-bold uppercase tracking-wider', gradeColor)}>
+        <span className={clsx('relative text-[11px] font-semibold tracking-[0.08em] uppercase', gradeColor)}>
           {grade}
         </span>
 
-        <h1 className="mt-1 text-3xl font-extrabold text-t1 font-mono">
-          {score} <span className="text-t4 text-xl">/ {total}</span>
+        <h1 className="tnum relative mt-2 text-[40px] leading-none font-semibold tracking-[-0.03em] text-t1">
+          {score} <span className="text-[22px] font-medium text-t4">/ {total}</span>
         </h1>
 
-        <p className="mt-1 text-[12.5px] text-t3">
-          Başarı Oranı: <span className="font-semibold text-t1">%{percent}</span>
+        <p className="relative mt-2 text-[12px] text-t3">
+          Başarı Oranı: <span className="tnum font-semibold text-t1">%{percent}</span>
         </p>
 
         {/* Streak banner */}
-        <div className="mt-4 flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-base px-3.5 py-1 text-[12px] font-medium text-t2 shadow-xs">
-          <Flame size={14} className="text-amber-500 fill-amber-500" />
+        <div className="relative mt-5 flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-n2 px-3.5 py-1 text-[12px] font-medium text-t2">
+          <Flame size={13} className="fill-accent/80 text-accent" />
           <span>
             {stats.streak} Günlük Quiz Serisi!
           </span>
@@ -77,14 +78,14 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
       </div>
 
       {/* ── Action Buttons ── */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={() => {
             uiTap()
             jumpToQuestion(0)
           }}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-3.5 text-[12px] font-medium text-t2 hover:bg-n3 hover:text-t1 transition-colors"
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-3.5 text-[12px] font-medium text-t2 shadow-[var(--shadow-card)] transition-colors hover:bg-n4 hover:text-t1"
         >
           <ArrowLeft size={13} />
           <span>Cevapları İncele</span>
@@ -96,7 +97,7 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
             uiTap()
             void regenerateTodaySession()
           }}
-          className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 text-[12px] font-medium text-black hover:opacity-90 transition-transform active:scale-95"
+          className="flex h-8 items-center gap-1.5 rounded-lg bg-accent px-4 text-[12px] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.35),0_4px_14px_-4px_rgba(245,165,36,0.5)] transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.97]"
         >
           <RotateCcw size={13} />
           <span>Yeni Set Çöz</span>
@@ -108,7 +109,7 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
             uiTap()
             setView('wiki')
           }}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-3.5 text-[12px] font-medium text-t2 hover:bg-n3 hover:text-t1 transition-colors"
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-3.5 text-[12px] font-medium text-t2 shadow-[var(--shadow-card)] transition-colors hover:bg-n4 hover:text-t1"
         >
           <BookOpen size={13} className="text-[var(--color-accent)]" />
           <span>Wiki'ye Git</span>
@@ -116,23 +117,21 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
       </div>
 
       {/* ── Category Breakdown ── */}
-      <div className="rounded-xl border border-[var(--border-default)] bg-n2 p-4">
-        <h3 className="text-[12px] font-semibold text-t2 uppercase tracking-wider mb-3">
-          Konu Dağılımı ve Başarı
-        </h3>
+      <div className="rounded-xl border border-[var(--border-default)] bg-raised p-4 shadow-[var(--shadow-card)]">
+        <h3 className="micro-label mb-3">Konu Dağılımı ve Başarı</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {Object.entries(categoryStats).map(([catKey, data]) => {
             const catPct = Math.round((data.correct / data.total) * 100)
             return (
               <div
                 key={catKey}
-                className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-base px-3 py-2 text-[12px]"
+                className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-n2 px-3 py-2 text-[12px]"
               >
-                <span className="text-t2 font-medium truncate max-w-[170px]" title={data.label}>
+                <span className="max-w-[170px] truncate font-medium text-t2" title={data.label}>
                   {data.label}
                 </span>
-                <div className="flex items-center gap-2 font-mono text-[11px]">
+                <div className="tnum flex items-center gap-2 text-[11px]">
                   <span className="text-t3">
                     {data.correct}/{data.total}
                   </span>
@@ -156,12 +155,10 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
       </div>
 
       {/* ── Question List Quick Review ── */}
-      <div className="rounded-xl border border-[var(--border-default)] bg-n2 p-4">
-        <h3 className="text-[12px] font-semibold text-t2 uppercase tracking-wider mb-3">
-          Soru Listesi (Tıklayarak İnceleyin)
-        </h3>
+      <div className="rounded-xl border border-[var(--border-default)] bg-raised p-4 shadow-[var(--shadow-card)]">
+        <h3 className="micro-label mb-3">Soru Listesi (Tıklayarak İnceleyin)</h3>
 
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
           {session.questions.map((q, idx) => {
             const userAns = session.answers[idx]
             const isCorrect = userAns === q.correctIndex
@@ -175,10 +172,10 @@ export function QuizSummary({ session }: { session: DailyQuizSession }) {
                   jumpToQuestion(idx)
                 }}
                 className={clsx(
-                  'flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-[11.5px] font-mono transition-colors',
+                  'tnum flex h-8 items-center justify-between rounded-lg border px-2.5 text-[11.5px] transition-colors',
                   isCorrect
-                    ? 'border-[var(--color-done)]/40 bg-[var(--color-done)]/10 text-[var(--color-done)] hover:bg-[var(--color-done)]/20'
-                    : 'border-[var(--color-needs)]/40 bg-[var(--color-needs)]/10 text-[var(--color-needs)] hover:bg-[var(--color-needs)]/20'
+                    ? 'border-[var(--color-done)]/25 bg-[var(--color-done)]/[0.08] text-[var(--color-done)] hover:bg-[var(--color-done)]/15'
+                    : 'border-[var(--color-needs)]/25 bg-[var(--color-needs)]/[0.08] text-[var(--color-needs)] hover:bg-[var(--color-needs)]/15'
                 )}
               >
                 <span className="font-semibold">#{idx + 1}</span>

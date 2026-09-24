@@ -43,7 +43,8 @@ const MAX_RECENT = 5
 const MAX_WIKI_HITS = 6
 
 /** consistent padding + micro-label styling for every group heading */
-const GROUP_CLS = '[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5'
+const GROUP_CLS =
+  'pb-1 [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]_.micro-label]:text-[10.5px] [&_[cmdk-group-heading]_.micro-label]:tracking-[0.07em] [&_[cmdk-group-heading]_.micro-label]:text-t4'
 
 /** panes.ts is React-free — PresetIcon → LucideIcon mapping mirrors the workspace toolbar. */
 const PRESET_CMD_ICONS: Record<PresetIcon, LucideIcon> = {
@@ -367,26 +368,28 @@ export function CommandPalette() {
       className="fixed inset-0 z-50 flex items-start justify-center pt-[18vh]"
       onClick={() => setPaletteOpen(false)}
     >
-      <div className="absolute inset-0 bg-black/55" />
+      <div className="absolute inset-0 bg-[rgba(4,5,7,0.62)] backdrop-blur-[3px]" />
       <Command
-        className="relative w-[600px] max-w-[90vw] overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-lg-dark backdrop-blur-xl"
+        className="pop-in relative w-[620px] max-w-[90vw] overflow-hidden rounded-2xl border border-[var(--border-default)] bg-popover shadow-[var(--shadow-pop),0_32px_80px_-24px_rgba(0,0,0,0.7)] [transform-origin:top_center]"
         onClick={(e) => e.stopPropagation()}
         loop
       >
-        <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-4">
-          <Zap size={15} className="text-t3" />
+        <div className="pane-head flex items-center gap-3 border-b border-[var(--border-subtle)] pr-3 pl-4">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent ring-1 ring-[rgba(245,165,36,0.22)] ring-inset">
+            <Zap size={13} strokeWidth={2} />
+          </span>
           <Command.Input
             autoFocus
             value={query}
             onValueChange={setQuery}
             placeholder="Type a command or search…"
-            className="h-12 flex-1 bg-transparent text-[14px] text-t1 placeholder:text-t4 outline-none"
+            className="h-[52px] flex-1 bg-transparent text-[14.5px] tracking-[-0.01em] text-t1 outline-none placeholder:text-t4"
           />
-          <kbd className="kbd">esc</kbd>
+          <kbd className="kbd !text-[10px]">esc</kbd>
         </div>
 
-        <Command.List className="max-h-[420px] overflow-y-auto p-1.5">
-          <Command.Empty className="py-8 text-center text-[13px] text-t4">
+        <Command.List className="scroll-thin max-h-[420px] overflow-y-auto p-1.5">
+          <Command.Empty className="py-10 text-center text-[12.5px] text-t3">
             No results.
           </Command.Empty>
 
@@ -445,7 +448,7 @@ export function CommandPalette() {
                 >
                   <FileText size={14} className="text-t3" />
                   {p.title}
-                  <span className="ml-auto text-[11px] text-t4">{p.type}</span>
+                  <span className="ml-auto rounded-md bg-n3 px-1.5 py-px text-[10.5px] text-t3">{p.type}</span>
                 </Item>
               ))}
               {q !== resolvedQ && wikiHits.length === 0 && (
@@ -480,16 +483,16 @@ export function CommandPalette() {
           )}
         </Command.List>
 
-        <div className="flex items-center gap-4 border-t border-[var(--border-subtle)] px-4 py-2 text-[11px] text-t4">
-          <kbd className="kbd">?</kbd>
+        <div className="flex h-9 items-center gap-4 border-t border-[var(--border-subtle)] bg-n2/60 px-4 text-[11px] text-t4">
+          <kbd className="kbd !text-[10px]">?</kbd>
           <span className="flex items-center gap-1.5">
-            <kbd className="kbd">↑↓</kbd> navigate
+            <kbd className="kbd !text-[10px]">↑↓</kbd> navigate
           </span>
           <span className="flex items-center gap-1.5">
-            <kbd className="kbd">↵</kbd> select
+            <kbd className="kbd !text-[10px]">↵</kbd> select
           </span>
           <span className="flex items-center gap-1.5">
-            <kbd className="kbd">esc</kbd> close
+            <kbd className="kbd !text-[10px]">esc</kbd> close
           </span>
           {q && <ResultCount />}
         </div>
@@ -530,7 +533,7 @@ function CmdItem({
       />
       {cmd.label}
       {cmd.hint !== undefined && (
-        <span className="ml-auto text-[11px] text-t4">{cmd.hint}</span>
+        <span className="ml-auto text-[11px] text-t4 group-data-[selected=true]/item:text-t3">{cmd.hint}</span>
       )}
     </Item>
   )
@@ -555,7 +558,7 @@ function Item({
       keywords={keywords}
       value={value}
       disabled={disabled}
-      className="flex h-9 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-[13px] text-t2 data-[selected=true]:bg-n4 data-[selected=true]:text-t1 data-[disabled=true]:cursor-default data-[disabled=true]:opacity-50"
+      className="group/item flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-[13px] text-t2 transition-colors duration-75 data-[disabled=true]:cursor-default data-[disabled=true]:opacity-50 data-[selected=true]:bg-n4 data-[selected=true]:text-t1 data-[selected=true]:shadow-[inset_0_0_0_1px_var(--border-subtle)]"
     >
       {children}
     </Command.Item>

@@ -92,14 +92,14 @@ export function LayoutMenu({
   return (
     <div ref={rootRef} className="relative">
       {/* trigger — same chrome + button look as the preset pill group */}
-      <div className="flex items-center gap-0.5 rounded-md border border-[var(--border-subtle)] p-0.5">
+      <div className="tool-group">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           title="Saved layouts"
           aria-haspopup="menu"
           aria-expanded={open}
-          className="flex h-6 items-center gap-1 rounded bg-transparent px-2 text-[11px] text-t3 transition-colors hover:bg-n3 hover:text-t2"
+          className="tool-btn !gap-1"
         >
           Layout
           <ChevronDown
@@ -113,7 +113,7 @@ export function LayoutMenu({
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-[var(--border-default)] bg-popover p-1 shadow-md-dark"
+          className="pop-surface pop-in absolute left-0 top-full z-50 mt-1.5 w-60 rounded-xl p-1"
         >
           {/* saved layouts — scrolls, capped well under 260px total */}
           <div className="scroll-thin max-h-[196px] overflow-y-auto">

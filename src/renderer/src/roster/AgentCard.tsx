@@ -28,16 +28,16 @@ const STATUS_TEXT: Record<Agent['status'], string> = {
 
 export function AgentCard({ agent, onEdit, onMessage, onRemove }: AgentCardProps) {
   return (
-    <div className="group relative rounded-xl border border-[var(--border-subtle)] bg-base p-4 transition-colors hover:border-[var(--border-default)]">
+    <div className="group card-hover relative rounded-xl border border-[var(--border-default)] bg-raised p-4 shadow-[var(--shadow-card)]">
       <div className="flex items-start gap-3">
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold text-white"
-          style={{ background: `hsl(${agent.hue} 45% 42%)` }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_1px_rgba(0,0,0,0.25),0_2px_6px_rgba(0,0,0,0.35)]"
+          style={{ background: `linear-gradient(145deg, hsl(${agent.hue} 50% 50%), hsl(${agent.hue} 45% 38%))` }}
         >
           {(agent.name[0] ?? '?').toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13.5px] font-medium text-t1">{agent.name}</p>
+          <p className="truncate text-[13.5px] font-semibold tracking-[-0.01em] text-t1">{agent.name}</p>
           <p
             className="micro-label mt-0.5"
             style={{ color: `hsl(${agent.hue} 65% 62%)` }}
@@ -45,16 +45,16 @@ export function AgentCard({ agent, onEdit, onMessage, onRemove }: AgentCardProps
             {ROLE_INFO[agent.role]?.label ?? agent.role}
           </p>
         </div>
-        <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="tool-group opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
           {onMessage && (
             <button
               type="button"
               onClick={() => onMessage(agent)}
               aria-label={`Message ${agent.name}`}
               title={`Message ${agent.name}`}
-              className="rounded-md p-1.5 text-t3 transition-colors hover:bg-n4 hover:text-t1 focus-visible:opacity-100"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-t3 transition-colors hover:bg-n4 hover:text-t1"
             >
-              <MessageSquare size={13} />
+              <MessageSquare size={12} />
             </button>
           )}
           <button
@@ -62,9 +62,9 @@ export function AgentCard({ agent, onEdit, onMessage, onRemove }: AgentCardProps
             onClick={() => onEdit(agent)}
             aria-label={`Edit ${agent.name}`}
             title={`Edit ${agent.name}`}
-            className="rounded-md p-1.5 text-t3 transition-colors hover:bg-n4 hover:text-t1 focus-visible:opacity-100"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
-            <Pencil size={13} />
+            <Pencil size={12} />
           </button>
           {onRemove && (
             <button
@@ -72,9 +72,9 @@ export function AgentCard({ agent, onEdit, onMessage, onRemove }: AgentCardProps
               onClick={() => onRemove(agent)}
               aria-label={`Remove ${agent.name}`}
               title={`Remove ${agent.name}`}
-              className="rounded-md p-1.5 text-t3 transition-colors hover:bg-n4 hover:text-[var(--color-needs)] focus-visible:opacity-100"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-t3 transition-colors hover:bg-[rgba(229,72,77,0.12)] hover:text-[var(--color-needs)]"
             >
-              <Trash2 size={13} />
+              <Trash2 size={12} />
             </button>
           )}
         </div>
@@ -85,7 +85,7 @@ export function AgentCard({ agent, onEdit, onMessage, onRemove }: AgentCardProps
       </p>
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
-        <span className="flex items-center gap-1.5 text-[11.5px] text-t3">
+        <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-t2">
           <StatusDot status={agent.status} size={6} />
           {STATUS_TEXT[agent.status]}
         </span>

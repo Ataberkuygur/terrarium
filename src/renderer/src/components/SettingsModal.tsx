@@ -155,29 +155,31 @@ export function SettingsModal() {
   }
 
   const inputCls =
-    'flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n2 px-3 text-[12.5px] text-t1 placeholder:text-t4 focus:border-[var(--color-accent)] focus:outline-hidden'
+    'flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n1/70 text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)] px-3 text-[12.5px] focus:outline-hidden'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 select-none animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,5,7,0.62)] p-4 backdrop-blur-[3px] select-none"
       onClick={() => setOpen(false)}
     >
       <div
-        className="flex w-full max-w-2xl flex-col rounded-2xl border border-[var(--border-default)] bg-base shadow-2xl overflow-hidden"
+        className="pop-in flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[var(--border-default)] bg-popover shadow-[var(--shadow-pop),0_32px_80px_-24px_rgba(0,0,0,0.7)] [transform-origin:center]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-3.5 bg-n2">
-          <div className="flex items-center gap-2">
-            <SettingsIcon size={15} className="text-[var(--color-accent)]" />
-            <h2 className="text-[14px] font-semibold text-t1">Ayarlar</h2>
+        <div className="pane-head flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] pr-2.5 pl-5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-subtle text-accent ring-1 ring-[rgba(245,165,36,0.22)] ring-inset">
+              <SettingsIcon size={13} strokeWidth={2} />
+            </span>
+            <h2 className="text-[13.5px] font-semibold tracking-[-0.01em] text-t1">Ayarlar</h2>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="flex h-6 w-6 items-center justify-center rounded text-t4 hover:bg-n4 hover:text-t1 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
-            <X size={14} />
+            <X size={14} strokeWidth={1.8} />
           </button>
         </div>
 
@@ -186,16 +188,16 @@ export function SettingsModal() {
 
         <div className="flex min-h-0 max-h-[70vh]">
           {/* ── saved sets ── */}
-          <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--border-subtle)] bg-n1">
-            <div className="px-3.5 pt-3.5 pb-2">
+          <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--border-subtle)] bg-n2/50">
+            <div className="px-4 pt-4 pb-2.5">
               <div className="micro-label">Quiz AI Setleri</div>
-              <p className="mt-1 text-[10.5px] leading-snug text-t4">
+              <p className="mt-1.5 text-[11px] leading-snug text-t4">
                 Bir sete bas → aktif olur. Quiz'deki <b>Yeni Set</b> hep aktif seti kullanır.
               </p>
             </div>
             <div className="flex-1 overflow-y-auto scroll-thin px-2 pb-3">
               {presets.length === 0 && (
-                <div className="rounded-lg border border-dashed border-[var(--border-subtle)] px-3 py-4 text-center text-[11px] text-t4">
+                <div className="rounded-[10px] border border-dashed border-[var(--border-default)] px-3 py-5 text-center text-[11px] leading-relaxed text-t4">
                   Henüz set yok — sağdaki formu doldurup "Yeni Set"e bas.
                 </div>
               )}
@@ -205,10 +207,10 @@ export function SettingsModal() {
                   <div
                     key={p.id}
                     className={clsx(
-                      'group mb-1 flex items-center gap-1 rounded-lg border px-2 py-1.5 transition-colors',
+                      'group mb-1 flex items-center gap-1 rounded-lg border px-2.5 py-2 transition-colors',
                       active
-                        ? 'border-[var(--color-accent)] bg-n3'
-                        : 'border-transparent hover:bg-n3'
+                        ? 'border-[rgba(245,165,36,0.35)] bg-[color-mix(in_srgb,var(--color-accent)_6%,var(--color-n3))] shadow-[var(--shadow-card)]'
+                        : 'border-transparent hover:bg-n4'
                     )}
                   >
                     <button
@@ -220,21 +222,21 @@ export function SettingsModal() {
                       <span
                         className={clsx(
                           'h-1.5 w-1.5 shrink-0 rounded-full',
-                          active ? 'bg-[var(--color-accent)]' : 'bg-n5'
+                          active ? 'bg-[var(--color-accent)] shadow-[0_0_6px_rgba(245,165,36,0.6)]' : 'bg-n7'
                         )}
                       />
                       <span className="min-w-0">
                         <span className="block truncate text-[12px] font-medium text-t1">
                           {p.name}
                         </span>
-                        <span className="block truncate text-[10px] text-t4">
+                        <span className="block truncate text-[10.5px] text-t4">
                           {providerName(p.provider)}
                           {p.model ? ` · ${p.model}` : ''}
                         </span>
                       </span>
                     </button>
                     {active && (
-                      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-[var(--color-accent)]">
+                      <span className="shrink-0 rounded-full bg-accent-subtle px-1.5 py-px text-[9px] font-semibold tracking-wide text-accent uppercase">
                         aktif
                       </span>
                     )}
@@ -242,7 +244,7 @@ export function SettingsModal() {
                       type="button"
                       onClick={() => deletePreset(p.id)}
                       title="Seti sil"
-                      className="shrink-0 rounded p-1 text-t4 opacity-0 transition-opacity hover:text-[var(--color-needs)] group-hover:opacity-100"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-t4 opacity-0 transition-[opacity,background-color,color] group-hover:opacity-100 hover:bg-[rgba(229,72,77,0.12)] hover:text-[var(--color-needs)]"
                     >
                       <Trash2 size={11} />
                     </button>
@@ -253,16 +255,18 @@ export function SettingsModal() {
           </aside>
 
           {/* ── editor ── */}
-          <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto scroll-thin p-5">
-            <div className="flex items-center gap-2">
-              <Cpu size={14} className="text-[var(--color-accent)]" />
-              <h3 className="text-[13px] font-semibold text-t1">
+          <div className="scroll-thin flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+                <Cpu size={14} />
+              </span>
+              <h3 className="text-[13px] font-semibold tracking-[-0.005em] text-t1">
                 {editingId ? 'Seti düzenle' : 'Yeni AI seti'}
               </h3>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-t2">Set adı</label>
+              <label className="text-[11.5px] font-medium text-t2">Set adı</label>
               <input
                 type="text"
                 value={name}
@@ -273,7 +277,7 @@ export function SettingsModal() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-t2">Model Sağlayıcı</label>
+              <label className="text-[11.5px] font-medium text-t2">Model Sağlayıcı</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {PROVIDER_OPTIONS.map((opt) => (
                   <button
@@ -285,12 +289,19 @@ export function SettingsModal() {
                       setTestResult(null)
                     }}
                     className={clsx(
-                      'rounded-lg border px-2.5 py-2 text-left transition-colors',
+                      'flex h-9 items-center gap-2 rounded-lg border px-3 text-left transition-colors',
                       provider === opt.id
-                        ? 'border-[var(--color-accent)] bg-n3'
-                        : 'border-[var(--border-subtle)] bg-n1 hover:border-[var(--border-default)] hover:bg-n2'
+                        ? 'border-[rgba(245,165,36,0.45)] bg-[color-mix(in_srgb,var(--color-accent)_7%,var(--color-n3))] shadow-[0_0_0_3px_rgba(245,165,36,0.06)]'
+                        : 'border-[var(--border-default)] bg-n2 hover:border-[var(--border-strong)] hover:bg-n4'
                     )}
                   >
+                    <span
+                      aria-hidden
+                      className={clsx(
+                        'h-3 w-3 shrink-0 rounded-full border-[1.5px] transition-colors',
+                        provider === opt.id ? 'border-accent bg-accent shadow-[inset_0_0_0_2px_var(--color-n3)]' : 'border-n8'
+                      )}
+                    />
                     <div className="text-[12px] font-medium text-t1">{opt.name}</div>
                   </button>
                 ))}
@@ -299,7 +310,7 @@ export function SettingsModal() {
 
             {needsEndpoint(provider) && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-t2">
+                <label className="text-[11.5px] font-medium text-t2">
                   Endpoint URL{provider === 'custom' ? ' (zorunlu)' : ' (opsiyonel)'}
                 </label>
                 <input
@@ -320,7 +331,7 @@ export function SettingsModal() {
 
             {needsKey(provider) && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-t2 flex items-center justify-between">
+                <label className="flex items-center justify-between text-[11.5px] font-medium text-t2">
                   <span>API Key{provider === 'custom' ? ' (opsiyonel)' : ''}</span>
                   <span className="text-[11px] font-normal text-t4">yerel saklanır</span>
                 </label>
@@ -335,7 +346,7 @@ export function SettingsModal() {
                   <button
                     type="button"
                     onClick={() => setShowKey(!showKey)}
-                    className="absolute right-2 text-t4 hover:text-t2 transition-colors"
+                    className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-t1"
                   >
                     {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
                   </button>
@@ -345,7 +356,7 @@ export function SettingsModal() {
 
             {provider !== 'builtin' && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-t2">
+                <label className="text-[11.5px] font-medium text-t2">
                   Model{provider === 'custom' ? ' (zorunlu)' : ''}
                 </label>
                 <input
@@ -369,7 +380,7 @@ export function SettingsModal() {
                     type="button"
                     onClick={() => void handleTest()}
                     disabled={testing}
-                    className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n2 px-2.5 text-[11.5px] text-t2 hover:bg-n3 hover:text-t1 disabled:opacity-50 transition-colors"
+                    className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n3 px-2.5 text-[12px] text-t2 transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1 disabled:opacity-50"
                   >
                     {testing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                     Bağlantıyı Test Et
@@ -393,7 +404,7 @@ export function SettingsModal() {
                   <button
                     type="button"
                     onClick={handleUpdateSet}
-                    className="flex h-8 items-center rounded-lg border border-[var(--border-default)] bg-n3 px-3 text-[12px] font-medium text-t2 hover:bg-n4 hover:text-t1 transition-colors"
+                    className="flex h-8 items-center rounded-lg border border-[var(--border-default)] bg-n4 px-3 text-[12px] font-medium text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors hover:border-[var(--border-strong)] hover:bg-n5"
                   >
                     Seti Güncelle
                   </button>
@@ -401,14 +412,14 @@ export function SettingsModal() {
                 <button
                   type="button"
                   onClick={handleApply}
-                  className="flex h-8 items-center rounded-lg border border-[var(--border-default)] bg-n2 px-3 text-[12px] font-medium text-t2 hover:bg-n3 hover:text-t1 transition-colors"
+                  className="flex h-8 items-center rounded-lg px-3 text-[12px] font-medium text-t2 transition-colors hover:bg-n4 hover:text-t1"
                 >
                   Uygula
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveAsNewSet}
-                  className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 text-[12px] font-medium text-black hover:opacity-90 transition-transform active:scale-95"
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-[12px] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.35),0_4px_14px_-6px_rgba(245,165,36,0.5)] transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.97]"
                 >
                   <Plus size={13} />
                   Yeni Set
@@ -433,12 +444,14 @@ function AppearanceSection() {
     { id: 'gpu', label: 'GPU', hint: 'WebGL — en hızlı, düşük DPI’da biraz yumuşak' }
   ]
   return (
-    <div className="flex flex-col border-b border-[var(--border-subtle)] bg-n1">
-    <div className="flex items-center gap-3 px-5 pt-3 pb-2">
-      <ZoomIn size={14} className="shrink-0 text-[var(--color-accent)]" />
+    <div className="flex flex-col border-b border-[var(--border-subtle)]">
+    <div className="flex items-center gap-3 px-5 pt-3.5 pb-2">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+        <ZoomIn size={14} />
+      </span>
       <div className="w-36 shrink-0">
         <div className="text-[12.5px] font-medium text-t1">Uygulama zoom'u</div>
-        <div className="text-[10.5px] leading-snug text-t4">
+        <div className="text-[11px] leading-snug text-t4">
           {zoom.available ? 'Ctrl+= / Ctrl+- / Ctrl+0' : 'Uygulamayı bir kez yeniden başlatınca aktif olur'}
         </div>
       </div>
@@ -453,8 +466,8 @@ function AppearanceSection() {
         className="min-w-0 flex-1 accent-[var(--color-accent)] disabled:opacity-40"
         aria-label="Uygulama zoom'u"
       />
-      <span className="tnum w-11 shrink-0 text-right text-[12px] text-t2">{pct}%</span>
-      <div className="flex shrink-0 gap-1">
+      <span className="tnum w-11 shrink-0 text-right text-[12px] font-medium text-t1">{pct}%</span>
+      <div className="seg-track h-7 shrink-0 gap-0.5">
         {APP_ZOOM_PRESETS.map((p) => (
           <button
             key={p}
@@ -462,10 +475,10 @@ function AppearanceSection() {
             disabled={!zoom.available}
             onClick={() => zoom.set(p)}
             className={clsx(
-              'h-6 rounded-md border px-1.5 text-[11px] transition-colors disabled:opacity-40',
+              'tnum h-[22px] rounded-[7px] px-2 text-[11px] transition-colors disabled:opacity-40',
               Math.abs(zoom.factor - p) < 0.001
-                ? 'border-[var(--color-accent)] bg-[var(--color-accent-subtle)] text-[var(--color-accent)]'
-                : 'border-[var(--border-default)] text-t3 hover:text-t1'
+                ? 'bg-gradient-to-b from-n5 to-n4 font-medium text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.04)] !text-accent'
+                : 'text-t3 hover:text-t1'
             )}
           >
             {Math.round(p * 100)}
@@ -473,13 +486,13 @@ function AppearanceSection() {
         ))}
       </div>
     </div>
-    <div className="flex items-center gap-3 px-5 pb-3">
-      <span className="w-[14px] shrink-0" />
+    <div className="flex items-center gap-3 px-5 pb-3.5">
+      <span className="w-7 shrink-0" />
       <div className="w-36 shrink-0">
         <div className="text-[12.5px] font-medium text-t1">Terminal yazısı</div>
-        <div className="text-[10.5px] leading-snug text-t4">Anında uygulanır</div>
+        <div className="text-[11px] leading-snug text-t4">Anında uygulanır</div>
       </div>
-      <div className="flex gap-1">
+      <div className="seg-track h-7 shrink-0 gap-0.5">
         {modes.map((m) => (
           <button
             key={m.id}
@@ -490,17 +503,17 @@ function AppearanceSection() {
               setTerminalRenderMode(m.id)
             }}
             className={clsx(
-              'h-7 rounded-md border px-2.5 text-[11.5px] transition-colors',
+              'h-[22px] rounded-[7px] px-2.5 text-[11.5px] transition-colors',
               render === m.id
-                ? 'border-[var(--color-accent)] bg-[var(--color-accent-subtle)] text-[var(--color-accent)]'
-                : 'border-[var(--border-default)] text-t3 hover:text-t1'
+                ? 'bg-gradient-to-b from-n5 to-n4 font-medium text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.04)]'
+                : 'text-t3 hover:text-t1'
             )}
           >
             {m.label}
           </button>
         ))}
       </div>
-      <span className="min-w-0 flex-1 truncate text-[10.5px] text-t4">
+      <span className="min-w-0 flex-1 truncate text-[11px] text-t4">
         {modes.find((m) => m.id === render)?.hint}
       </span>
     </div>
@@ -555,11 +568,13 @@ function JevSection() {
 
   const fromEnv = status?.source === 'env'
   return (
-    <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-n1 px-5 py-3">
-      <KeyRound size={14} className="shrink-0 text-[var(--color-accent)]" />
+    <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-5 py-3.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+        <KeyRound size={14} />
+      </span>
       <div className="w-36 shrink-0">
         <div className="text-[12.5px] font-medium text-t1">Jev API anahtarı</div>
-        <div className="text-[10.5px] leading-snug text-t4">
+        <div className="truncate text-[11px] leading-snug text-t4">
           {status?.configured
             ? `${status.masked}${fromEnv ? ' · ortam değişkeni' : ''}${status.enabled ? '' : ' · kapalı'}`
             : 'TypeSafe AI — bağlı değil'}
@@ -577,13 +592,13 @@ function JevSection() {
           spellCheck={false}
           autoComplete="off"
           disabled={fromEnv}
-          className="h-7 w-full rounded-md border border-[var(--border-default)] bg-n2 pl-2.5 pr-8 text-[12px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--color-accent)] disabled:opacity-40"
+          className="h-7 w-full rounded-lg border border-[var(--border-default)] bg-n1/70 text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)] pr-8 pl-2.5 font-mono text-[12px] disabled:opacity-40"
           aria-label="Jev API anahtarı"
         />
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-t4 hover:text-t1"
+          className="absolute top-1/2 right-1 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-t4 transition-colors hover:text-t1"
           aria-label={show ? 'Gizle' : 'Göster'}
         >
           {show ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -593,7 +608,7 @@ function JevSection() {
         type="button"
         disabled={!draft.trim() || busy !== null}
         onClick={() => void save(draft)}
-        className="h-7 shrink-0 rounded-md border border-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-2.5 text-[11.5px] text-[var(--color-accent)] transition-opacity disabled:opacity-40"
+        className="btn-accent-soft flex h-7 shrink-0 items-center rounded-lg px-2.5 text-[12px] font-medium disabled:pointer-events-none disabled:opacity-40"
       >
         {busy === 'save' ? <Loader2 size={12} className="animate-spin" /> : 'Kaydet'}
       </button>
@@ -601,7 +616,7 @@ function JevSection() {
         type="button"
         disabled={!status?.configured || busy !== null}
         onClick={() => void test()}
-        className="h-7 shrink-0 rounded-md border border-[var(--border-default)] px-2.5 text-[11.5px] text-t3 transition-colors hover:text-t1 disabled:opacity-40"
+        className="flex h-7 shrink-0 items-center rounded-lg border border-[var(--border-default)] px-2.5 text-[12px] text-t2 transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1 disabled:pointer-events-none disabled:opacity-40"
       >
         {busy === 'test' ? <Loader2 size={12} className="animate-spin" /> : 'Test et'}
       </button>
@@ -611,14 +626,14 @@ function JevSection() {
           disabled={busy !== null}
           onClick={() => void save('')}
           title="Kayıtlı anahtarı kaldır"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-t4 hover:bg-n4 hover:text-t1 disabled:opacity-40"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-t4 transition-colors hover:bg-[rgba(229,72,77,0.12)] hover:text-[var(--color-needs)] disabled:opacity-40"
         >
           <Trash2 size={13} />
         </button>
       )}
       <span
         className={clsx(
-          'flex w-40 shrink-0 items-center gap-1 truncate text-[10.5px]',
+          'flex w-40 shrink-0 items-center gap-1 truncate text-[11px]',
           msg ? (msg.ok ? 'text-[var(--color-done)]' : 'text-[var(--color-error)]') : 'text-t4'
         )}
       >

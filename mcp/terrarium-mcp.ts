@@ -1029,6 +1029,19 @@ const TOOLS: Tool[] = [
       return netCall('net.kill', { agent: req(args, 'agent'), net: str(args.net) })
     }
   },
+  {
+    name: 'orchestrator_topic',
+    description:
+      'Label what this network is for with a short 2–4 word topic (e.g. "Senior loop") — the tab then reads "Web 1: Senior loop". Empty string clears it.',
+    inputSchema: {
+      type: 'object',
+      properties: { topic: { type: 'string' }, net: { type: 'string' } },
+      required: ['topic']
+    },
+    async run(args) {
+      return netCall('net.topic', { topic: typeof args.topic === 'string' ? args.topic : '', net: str(args.net) })
+    }
+  },
 
   // ── self maintenance ──
   {

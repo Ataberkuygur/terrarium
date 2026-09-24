@@ -64,6 +64,9 @@ import { CanvasControls } from '../components/CanvasControls'
 export { PRESETS } from '../lib/panes'
 export type { PaneAction, PaneKind, PaneLeaf, PaneNode, PanePreset, SplitDir } from '../lib/panes'
 
+/** The toolbar's New Browser button — parked until browser panes get their polish pass. */
+const SHOW_NEW_BROWSER = false
+
 const STORAGE_KEY = 'terrarium.panes'
 const FOCUS_STORAGE_KEY = 'terrarium.workspace.focus'
 
@@ -721,9 +724,9 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
   return (
     <div className="flex h-full flex-col bg-canvas">
       {/* ── toolbar ── */}
-      <header className="scroll-thin flex h-10 shrink-0 select-none items-center gap-1 overflow-x-auto border-b border-[var(--border-subtle)] bg-n2 px-2">
+      <header className="chrome-bar scroll-thin flex h-11 shrink-0 select-none items-center gap-1.5 overflow-x-auto px-2.5">
         <ModeSwitch orchestrate={orchestrate} onChange={setMode} />
-        <span className="mx-1.5 h-4 w-px shrink-0 bg-n5" />
+        <span className="mx-1 h-5 w-px shrink-0 bg-[var(--border-default)]" />
 
         {orchestrate ? (
           <div key="orch-tools" className="ws-tools-in flex min-w-0 flex-1 items-center gap-1">
@@ -732,20 +735,27 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
             <OrchestrationActions />
           </div>
         ) : (
-        <div key="grid-tools" className="ws-tools-in flex min-w-0 flex-1 items-center gap-1">
-        <ToolButton
-          icon={<Terminal size={12} />}
-          label="New Terminal"
-          kbd="Ctrl+\"
-          disabled={count >= MAX_LEAVES}
+        <div key="grid-tools" className="ws-tools-in flex min-w-0 flex-1 items-center gap-1.5">
+        <button
+          type="button"
           onClick={() => spawn('terminal')}
-        />
-        <ToolButton
-          icon={<Globe size={12} />}
-          label="New Browser"
           disabled={count >= MAX_LEAVES}
-          onClick={() => spawn('browser')}
-        />
+          title="New terminal — Ctrl+\"
+          className="btn-accent-soft flex h-7 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium disabled:pointer-events-none disabled:opacity-40"
+        >
+          <Terminal size={12.5} strokeWidth={2} />
+          New Terminal
+        </button>
+        {/* New Browser — hidden for now (SHOW_NEW_BROWSER); browser panes
+            still open from the palette, the pane bridge and `newtab`. */}
+        {SHOW_NEW_BROWSER && (
+          <ToolButton
+            icon={<Globe size={12} />}
+            label="New Browser"
+            disabled={count >= MAX_LEAVES}
+            onClick={() => spawn('browser')}
+          />
+        )}
 
         <LayoutMenu
           tree={tree}
@@ -756,15 +766,15 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
         />
 
         {/* quick grids — 4 = 2×2, 6 = 3×2, 8 = 4×2 (replaces the tree) */}
-        <span className="ml-1 flex items-center gap-0.5 rounded-md border border-[var(--border-subtle)] p-0.5">
-          <LayoutGrid size={11} strokeWidth={1.75} className="mx-1 shrink-0 text-t4" />
+        <span className="tool-group" title="Quick grids — replace the layout">
+          <LayoutGrid size={11.5} strokeWidth={1.75} className="mx-1.5 shrink-0 text-t4" />
           {([4, 6, 8] as const).map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => applyGrid(n)}
               title={`Grid ${n} — ${n / 2}×2 terminals (replaces layout)`}
-              className="flex h-5 w-5 items-center justify-center rounded text-[10.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
+              className="tool-btn tnum !w-6 !px-0 !text-[11px]"
             >
               {n}
             </button>
@@ -772,12 +782,12 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
         </span>
 
         {/* canvas zoom — Ctrl+wheel over the grid, middle-drag to pan */}
-        <span className="ml-1 flex shrink-0 items-center gap-0.5 rounded-md border border-[var(--border-subtle)] p-0.5">
+        <span className="tool-group">
           <button
             type="button"
             onClick={() => gridPz.zoomBy(1 / 1.2)}
             title="Zoom out (Ctrl+wheel)"
-            className="flex h-5 w-5 items-center justify-center rounded text-[12px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
+            className="tool-btn !w-6 !px-0 !text-[13px]"
           >
             −
           </button>
@@ -785,10 +795,7 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
             type="button"
             onClick={() => gridPz.setView(IDENTITY_VIEW)}
             title="Reset zoom — Ctrl+wheel zooms, middle-drag pans"
-            className={clsx(
-              'tnum h-5 min-w-[38px] rounded px-1 text-[10.5px] transition-colors hover:bg-n4 hover:text-t1',
-              gridZoomed ? 'text-accent' : 'text-t3'
-            )}
+            className={clsx('tool-btn tnum min-w-[44px] !px-1 !text-[11px]', gridZoomed && '!text-accent')}
           >
             {Math.round(gz * 100)}%
           </button>
@@ -796,7 +803,7 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
             type="button"
             onClick={() => gridPz.zoomBy(1.2)}
             title="Zoom in (Ctrl+wheel)"
-            className="flex h-5 w-5 items-center justify-center rounded text-[12px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
+            className="tool-btn !w-6 !px-0 !text-[13px]"
           >
             +
           </button>
@@ -814,16 +821,14 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
           disabled={!tree || count <= 1}
           title="Tidy layout — evenly resize all panes (Ctrl+Shift+T)"
           className={clsx(
-            'flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n3 px-2.5 text-[11.5px] font-medium text-t2 transition-all',
+            'group/tidy flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n3 px-2.5 text-[12px] font-medium text-t2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all',
             'hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1 active:scale-[0.98]',
             'disabled:pointer-events-none disabled:opacity-35'
           )}
         >
-          <Sparkles size={12} className="text-[var(--color-accent)]" />
+          <Sparkles size={12} className="text-[var(--color-accent)] transition-transform duration-300 group-hover/tidy:rotate-12" />
           <span>Tidy</span>
-          <kbd className="ml-0.5 rounded border border-[var(--border-subtle)] bg-n2 px-1 py-0.5 text-[9.5px] text-t4">
-            Ctrl+Shift+T
-          </kbd>
+          <span className="kbd ml-0.5 !px-1 !py-[2px] !text-[9.5px]">Ctrl⇧T</span>
         </button>
         </div>
         )}
@@ -937,37 +942,37 @@ function ModeSwitch({
 }) {
   const seg = (on: boolean) =>
     clsx(
-      'relative z-[1] flex h-6 items-center gap-1.5 rounded px-2.5 text-[11.5px] font-medium transition-colors duration-150',
+      'relative z-[1] flex h-[26px] items-center gap-1.5 rounded-[7px] px-2.5 text-[12px] font-medium transition-colors duration-150',
       on ? 'text-t1' : 'text-t3 hover:text-t2'
     )
   return (
-    <div className="relative flex shrink-0 items-center rounded-md bg-n1 p-0.5 ring-1 ring-[var(--border-subtle)]">
+    <div className="seg-track shrink-0">
       {/* sliding thumb */}
       <span
         aria-hidden
-        className="absolute top-0.5 bottom-0.5 left-0.5 rounded bg-n4 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
-        style={{ width: 'calc(50% - 2px)', transform: orchestrate ? 'translateX(100%)' : 'none' }}
+        className="seg-thumb"
+        style={{ left: 2, width: 'calc(50% - 2px)', transform: orchestrate ? 'translateX(100%)' : 'none' }}
       />
       <button
         type="button"
         className={clsx(seg(!orchestrate), 'flex-1 justify-center')}
-        style={{ width: 92 }}
+        style={{ width: 108 }}
         onClick={() => onChange(false)}
         title="Pane grid"
         aria-pressed={!orchestrate}
       >
-        <LayoutGrid size={12} />
+        <LayoutGrid size={12} className={clsx('shrink-0', !orchestrate && 'text-accent')} />
         Grid
       </button>
       <button
         type="button"
         className={clsx(seg(orchestrate), 'flex-1 justify-center')}
-        style={{ width: 92 }}
+        style={{ width: 108 }}
         onClick={() => onChange(true)}
         title="Orchestration — an orchestrator with subagent terminals around it"
         aria-pressed={orchestrate}
       >
-        <Workflow size={13} strokeWidth={2} className={orchestrate ? 'text-accent' : undefined} />
+        <Workflow size={13} strokeWidth={2} className={clsx('shrink-0', orchestrate && 'text-accent')} />
         Orchestrate
       </button>
     </div>
@@ -1025,7 +1030,9 @@ function EmptyWorkspace({ onSpawn }: { onSpawn: (kind: PaneKind) => void }) {
       </div>
       <div className="flex items-center gap-1.5">
         <ToolButton icon={<Terminal size={12} />} label="New Terminal" onClick={() => onSpawn('terminal')} />
-        <ToolButton icon={<Globe size={12} />} label="New Browser" onClick={() => onSpawn('browser')} />
+        {SHOW_NEW_BROWSER && (
+          <ToolButton icon={<Globe size={12} />} label="New Browser" onClick={() => onSpawn('browser')} />
+        )}
       </div>
     </div>
   )

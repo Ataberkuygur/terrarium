@@ -97,14 +97,14 @@ function CommentEditor({
         </span>
         <button
           onClick={onCancel}
-          className="rounded-md px-2 py-1 text-[11.5px] text-t3 hover:bg-n4 hover:text-t2 transition-colors"
+          className="flex h-7 items-center rounded-lg px-2.5 text-[11.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
         >
           Cancel
         </button>
         <button
           onClick={submit}
           disabled={!body.trim()}
-          className="rounded-md bg-accent px-2.5 py-1 text-[11.5px] font-medium text-on-accent hover:bg-accent-hover transition-colors disabled:opacity-40"
+          className="btn-accent-soft flex h-7 items-center rounded-lg px-2.5 text-[11.5px] font-medium disabled:opacity-40"
         >
           Comment
         </button>
@@ -248,7 +248,7 @@ function FileSection(p: FileSectionProps) {
   return (
     <section>
       {/* file header — sticks while its hunks scroll past */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-[var(--border-default)] bg-raised px-3 py-2">
+      <div className="pane-head sticky top-0 z-10 flex h-9 items-center gap-2 border-b border-[var(--border-default)] px-3">
         {fileIcon(file)}
         <span className="truncate font-mono text-[12px] text-t1">{path}</span>
         {file.isRenamed && file.oldPath && (
@@ -361,7 +361,7 @@ export function DiffView({ diffText, onSendToAgent, onApprove }: DiffViewProps) 
   return (
     <div className="flex h-full flex-col bg-canvas">
       {/* ── top bar ── */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--border-default)] bg-base px-4 py-2.5">
+      <div className="chrome-bar flex h-11 shrink-0 items-center gap-3 px-5">
         <span className="text-[12.5px] text-t2">
           <span className="tnum font-medium text-t1">{stats.files}</span> file
           {stats.files === 1 ? '' : 's'} changed
@@ -380,7 +380,7 @@ export function DiffView({ diffText, onSendToAgent, onApprove }: DiffViewProps) 
           {onApprove && (
             <button
               onClick={onApprove}
-              className="flex items-center gap-1.5 rounded-md border border-[color-mix(in_srgb,var(--color-done)_45%,transparent)] px-3 py-1.5 text-[12.5px] font-medium text-done transition-colors hover:bg-[color-mix(in_srgb,var(--color-done)_10%,transparent)]"
+              className="flex h-7 items-center gap-1.5 rounded-lg border border-[color-mix(in_srgb,var(--color-done)_40%,transparent)] bg-[color-mix(in_srgb,var(--color-done)_7%,transparent)] px-3 text-[12px] font-medium text-done transition-colors hover:bg-[color-mix(in_srgb,var(--color-done)_14%,transparent)]"
             >
               <Check size={13} /> Approve &amp; merge
             </button>
@@ -388,7 +388,7 @@ export function DiffView({ diffText, onSendToAgent, onApprove }: DiffViewProps) 
           <button
             onClick={send}
             disabled={comments.length === 0}
-            className="flex items-center gap-1.5 rounded-md bg-t1 px-3 py-1.5 text-[12.5px] font-medium text-n1 transition-colors hover:bg-n12 disabled:cursor-not-allowed disabled:opacity-40"
+            className="btn-accent-soft flex h-7 items-center gap-1.5 rounded-lg px-3 text-[12px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send size={12} />
             {comments.length > 0
@@ -401,8 +401,8 @@ export function DiffView({ diffText, onSendToAgent, onApprove }: DiffViewProps) 
       {/* ── rail + body ── */}
       <div className="flex min-h-0 flex-1">
         {/* file list rail */}
-        <div className="w-[200px] shrink-0 overflow-y-auto border-r border-[var(--border-subtle)] bg-base py-1">
-          <div className="micro-label px-3 pb-1 pt-2">Files</div>
+        <div className="scroll-thin w-[210px] shrink-0 overflow-y-auto border-r border-[var(--border-subtle)] bg-n1 px-1.5 py-1">
+          <div className="micro-label px-2 pt-2 pb-1.5">Files</div>
           {parsed.files.map((f, i) => {
             const { dir, name } = splitPath(displayPath(f))
             return (
@@ -410,8 +410,8 @@ export function DiffView({ diffText, onSendToAgent, onApprove }: DiffViewProps) 
                 key={i}
                 onClick={() => scrollToFile(i)}
                 className={clsx(
-                  'flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors',
-                  selFile === i ? 'bg-n3' : 'hover:bg-n2'
+                  'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors',
+                  selFile === i ? 'bg-n4 shadow-[inset_0_0_0_1px_var(--border-subtle)]' : 'hover:bg-n3'
                 )}
               >
                 {fileIcon(f)}
@@ -429,7 +429,7 @@ export function DiffView({ diffText, onSendToAgent, onApprove }: DiffViewProps) 
         </div>
 
         {/* diff body */}
-        <div className="min-w-0 flex-1 overflow-y-auto">
+        <div className="scroll-thin min-w-0 flex-1 overflow-y-auto">
           {parsed.files.length === 0 ? (
             <div className="flex h-full items-center justify-center text-[12.5px] text-t4">
               No diff to review.

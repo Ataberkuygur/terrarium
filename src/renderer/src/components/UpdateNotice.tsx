@@ -46,19 +46,17 @@ export function UpdateNotice() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-          className="fixed bottom-3 left-3 z-50 w-[280px] select-none overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-lg-dark backdrop-blur-xl"
+          className="fixed bottom-3 left-3 z-50 w-[288px] select-none overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 bg-[image:var(--grad-chrome)] shadow-[var(--shadow-pop)] backdrop-blur-xl"
           role="status"
         >
-          <div className="flex items-start gap-2.5 px-3 pt-3">
-            <div
-              className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-              style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}
-            >
-              <ArrowDownToLine size={14} />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
+          <div className="flex items-start gap-2.5 px-3.5 pt-3.5">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[rgba(245,165,36,0.25)] bg-accent-subtle text-accent shadow-[inset_0_1px_0_rgba(255,220,160,0.08)]">
+              <ArrowDownToLine size={14} strokeWidth={1.9} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[12.5px] font-medium text-t1">New update available</div>
-              <div className="tnum text-[11.5px] text-t3">
+              <div className="text-[12.5px] font-semibold tracking-[-0.005em] text-t1">New update available</div>
+              <div className="tnum mt-px text-[11.5px] text-t3">
                 v{offer.current} → v{offer.version}
               </div>
             </div>
@@ -67,22 +65,22 @@ export function UpdateNotice() {
               aria-label="Later"
               title="Later"
               onClick={() => setDismissed(offer.version ?? '')}
-              className="-mr-1 rounded-md p-1 text-t4 transition-colors hover:bg-n4 hover:text-t2"
+              className="-mt-0.5 -mr-1.5 flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-t1"
             >
               <X size={13} />
             </button>
           </div>
 
           {offer.state !== 'ready' && (
-            <div className="mx-3 mt-2.5 h-1 overflow-hidden rounded-full bg-n4">
+            <div className="mx-3.5 mt-3 h-1 overflow-hidden rounded-full bg-n1 shadow-[inset_0_0_0_1px_var(--border-subtle)]">
               <div
-                className="h-full rounded-full transition-[width] duration-300"
-                style={{ width: `${Math.max(4, pct)}%`, background: 'var(--color-accent)' }}
+                className="h-full rounded-full bg-gradient-to-r from-[#d9850b] to-accent shadow-[0_0_8px_rgba(245,165,36,0.45)] transition-[width] duration-300"
+                style={{ width: `${Math.max(4, pct)}%` }}
               />
             </div>
           )}
 
-          <div className="flex items-center gap-2 px-3 pb-3 pt-2.5">
+          <div className="flex items-center gap-2 px-3.5 pt-3 pb-3.5">
             <span className="tnum text-[11px] text-t4">
               {offer.state === 'ready' ? 'Downloaded · ready' : `Downloading… ${pct}%`}
             </span>
@@ -90,8 +88,7 @@ export function UpdateNotice() {
               type="button"
               onClick={install}
               disabled={busy}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors disabled:opacity-70"
-              style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}
+              className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg bg-accent px-3 text-[12px] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.35)] transition-colors hover:bg-accent-hover disabled:opacity-70"
             >
               {busy ? <Loader2 size={12} className="animate-spin" /> : <RotateCw size={12} />}
               {offer.state === 'ready' ? 'Restart & update' : busy ? 'Updating…' : 'Update'}

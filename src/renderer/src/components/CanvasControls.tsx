@@ -20,7 +20,7 @@ export interface MinimapItem {
 }
 
 const btn =
-  'flex h-6 w-6 items-center justify-center rounded text-t3 transition-colors hover:bg-n5 hover:text-t1 disabled:pointer-events-none disabled:opacity-30'
+  'flex h-6 w-6 items-center justify-center rounded-md text-t3 transition-colors hover:bg-n4 hover:text-t1 disabled:pointer-events-none disabled:opacity-30'
 
 export function CanvasControls({
   view,
@@ -54,8 +54,8 @@ export function CanvasControls({
       className="pointer-events-auto absolute bottom-3 left-3 z-40 flex flex-col items-start gap-1.5 opacity-60 transition-opacity duration-150 select-none hover:opacity-100"
     >
       {minimap && minimap.items.length > 1 && <Minimap view={view} {...minimap} />}
-      <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border-default)] bg-[rgba(16,17,20,0.88)] p-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)] backdrop-blur">
-        {hint && <span className="px-1.5 text-[10.5px] text-t4">{hint}</span>}
+      <div className="flex h-8 items-center gap-px rounded-[10px] border border-[var(--border-default)] bg-[rgba(22,23,27,0.86)] bg-[image:var(--grad-chrome)] p-[3px] shadow-[var(--shadow-pop)] backdrop-blur-xl">
+        {hint && <span className="px-2 text-[10.5px] text-t4">{hint}</span>}
         <button type="button" className={btn} title="Zoom out (Ctrl+wheel)" onClick={() => onZoom(1 / 1.2)}>
           <Minus size={12} />
         </button>
@@ -63,14 +63,14 @@ export function CanvasControls({
           type="button"
           onClick={onFit}
           title="Fit (double-click empty canvas)"
-          className="tnum h-6 min-w-[44px] rounded px-1 text-[11px] text-t2 transition-colors hover:bg-n5 hover:text-t1"
+          className="tnum h-6 min-w-[44px] rounded-md px-1 text-[11px] font-medium text-t2 transition-colors hover:bg-n4 hover:text-t1"
         >
           {Math.round(view.z * 100)}%
         </button>
         <button type="button" className={btn} title="Zoom in (Ctrl+wheel)" onClick={() => onZoom(1.2)}>
           <Plus size={12} />
         </button>
-        <span className="mx-0.5 h-3.5 w-px bg-n6" />
+        <span className="mx-1 h-3.5 w-px bg-[var(--border-default)]" />
         <button type="button" className={btn} title="Fit everything in view" onClick={onFit}>
           <Maximize size={11} />
         </button>
@@ -135,7 +135,7 @@ function Minimap({
       ref={ref}
       width={(x1 - x0) * k}
       height={(y1 - y0) * k}
-      className="cursor-pointer rounded-md border border-[var(--border-default)] bg-[rgba(10,11,13,0.9)] shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
+      className="cursor-pointer rounded-[10px] border border-[var(--border-default)] bg-[rgba(10,11,13,0.88)] shadow-[var(--shadow-pop)] backdrop-blur-xl"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
         jump(e)
@@ -164,7 +164,7 @@ function Minimap({
         width={vw * k}
         height={vh * k}
         fill="rgba(255,255,255,0.04)"
-        stroke="rgba(255,255,255,0.55)"
+        stroke="rgba(245,165,36,0.6)"
         strokeWidth={1}
         rx={2}
       />

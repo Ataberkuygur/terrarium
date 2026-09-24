@@ -115,48 +115,55 @@ export function QuizSettingsModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 select-none animate-in fade-in duration-150">
-      <div className="flex flex-col w-full max-w-lg rounded-2xl border border-[var(--border-default)] bg-base shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[6px] select-none">
+      <div className="pop-in flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-default)] bg-popover shadow-[var(--shadow-pop)]">
         {/* ── Modal Header ── */}
-        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-3.5 bg-n2">
-          <div className="flex items-center gap-2">
-            <Cpu size={16} className="text-[var(--color-accent)]" />
-            <h2 className="text-[14px] font-semibold text-t1">Quiz Model & API Ayarları</h2>
+        <div className="pane-head flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[rgba(245,165,36,0.22)] bg-accent-subtle text-accent">
+              <Cpu size={14} strokeWidth={1.8} />
+            </span>
+            <h2 className="text-[13.5px] font-semibold tracking-[-0.01em] text-t1">Quiz Model & API Ayarları</h2>
           </div>
           <button
             type="button"
             onClick={() => setSettingsOpen(false)}
-            className="flex h-6 w-6 items-center justify-center rounded text-t4 hover:bg-n4 hover:text-t1 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
             <X size={14} />
           </button>
         </div>
 
         {/* ── Modal Body ── */}
-        <div className="flex flex-col gap-4 p-5 max-h-[75vh] overflow-y-auto scroll-thin">
+        <div className="scroll-thin flex max-h-[75vh] flex-col gap-5 overflow-y-auto p-5">
           {/* Provider Selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium text-t2">Model Sağlayıcı (Provider)</label>
-            <div className="grid grid-cols-1 gap-2">
+          <div className="flex flex-col gap-2">
+            <label className="micro-label">Model Sağlayıcı (Provider)</label>
+            <div className="grid grid-cols-1 gap-1.5">
               {PROVIDER_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => handleProviderChange(opt.id)}
                   className={clsx(
-                    'flex flex-col text-left rounded-xl border p-3 transition-all',
+                    'flex flex-col rounded-[10px] border px-3 py-2.5 text-left transition-all',
                     provider === opt.id
-                      ? 'border-[var(--color-accent)] bg-n3 shadow-xs'
-                      : 'border-[var(--border-subtle)] bg-n1 hover:border-[var(--border-default)] hover:bg-n2'
+                      ? 'ring-focus border-transparent bg-n3'
+                      : 'border-[var(--border-subtle)] bg-n2/60 hover:border-[var(--border-default)] hover:bg-n3'
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-medium text-t1">{opt.name}</span>
-                    {provider === opt.id && (
-                      <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
-                    )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12.5px] font-medium text-t1">{opt.name}</span>
+                    <span
+                      className={clsx(
+                        'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                        provider === opt.id ? 'border-accent bg-accent' : 'border-n8'
+                      )}
+                    >
+                      {provider === opt.id && <span className="h-1.5 w-1.5 rounded-full bg-on-accent" />}
+                    </span>
                   </div>
-                  <span className="text-[11.5px] text-t4 mt-0.5">{opt.desc}</span>
+                  <span className="mt-0.5 text-[11.5px] leading-[16px] text-t3">{opt.desc}</span>
                 </button>
               ))}
             </div>
@@ -165,9 +172,9 @@ export function QuizSettingsModal() {
           {/* API Key Input (if not builtin/ollama — optional on custom) */}
           {provider !== 'builtin' && provider !== 'ollama' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-t2 flex items-center justify-between">
+              <label className="flex items-center justify-between text-[12px] font-medium text-t2">
                 <span>API Anahtarı (API Key)</span>
-                <span className="text-[11px] text-t4 font-normal">Yerel olarak saklanır</span>
+                <span className="text-[11px] font-normal text-t4">Yerel olarak saklanır</span>
               </label>
               <div className="relative flex items-center">
                 <input
@@ -183,12 +190,12 @@ export function QuizSettingsModal() {
                           ? 'sk-or-... (opsiyonel)'
                           : 'sk-ant-...'
                   }
-                  className="flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n2 px-3 pr-8 text-[12.5px] text-t1 font-mono placeholder:text-t4 focus:border-[var(--color-accent)] focus:outline-hidden"
+                  className="flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n1/70 px-3 pr-9 font-mono text-[12px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.5)] focus:outline-hidden"
                 />
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-2 text-t4 hover:text-t2 transition-colors"
+                  className="absolute right-1 flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-t1"
                 >
                   {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
                 </button>
@@ -207,7 +214,7 @@ export function QuizSettingsModal() {
                 placeholder={
                   PROVIDER_OPTIONS.find((p) => p.id === provider)?.defaultModel || 'Model adı'
                 }
-                className="flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n2 px-3 text-[12.5px] text-t1 font-mono placeholder:text-t4 focus:border-[var(--color-accent)] focus:outline-hidden"
+                className="flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n1/70 px-3 font-mono text-[12px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.5)] focus:outline-hidden"
               />
             </div>
           )}
@@ -215,7 +222,7 @@ export function QuizSettingsModal() {
           {/* Custom Endpoint Input (Ollama / OpenAI-compatible / custom) */}
           {(provider === 'ollama' || provider === 'openai' || provider === 'custom') && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-t2 flex items-center justify-between">
+              <label className="flex items-center justify-between text-[12px] font-medium text-t2">
                 <span>
                   Özel Sunucu / Endpoint{provider === 'custom' ? ' (zorunlu)' : ' (Opsiyonel)'}
                 </span>
@@ -231,7 +238,7 @@ export function QuizSettingsModal() {
                       ? 'https://openrouter.ai/api/v1/chat/completions'
                       : 'https://api.openai.com/v1/chat/completions'
                 }
-                className="flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n2 px-3 text-[12px] text-t1 font-mono placeholder:text-t4 focus:border-[var(--color-accent)] focus:outline-hidden"
+                className="flex h-8 w-full rounded-lg border border-[var(--border-default)] bg-n1/70 px-3 font-mono text-[12px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.5)] focus:outline-hidden"
               />
             </div>
           )}
@@ -243,7 +250,7 @@ export function QuizSettingsModal() {
                 type="button"
                 onClick={handleTestConnection}
                 disabled={testing}
-                className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n2 px-2.5 text-[11.5px] text-t2 hover:bg-n3 hover:text-t1 disabled:opacity-50 transition-colors"
+                className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-2.5 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1 disabled:opacity-50"
               >
                 {testing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                 <span>Bağlantıyı Test Et</span>
@@ -265,11 +272,11 @@ export function QuizSettingsModal() {
         </div>
 
         {/* ── Modal Footer ── */}
-        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-n2 px-5 py-3">
+        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-n2/70 px-5 py-3">
           <button
             type="button"
             onClick={() => setSettingsOpen(false)}
-            className="flex h-8 items-center rounded-lg border border-[var(--border-default)] bg-n3 px-3.5 text-[12px] font-medium text-t2 hover:bg-n4 hover:text-t1 transition-colors"
+            className="flex h-8 items-center rounded-lg px-3 text-[12px] font-medium text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
             İptal
           </button>
@@ -278,7 +285,7 @@ export function QuizSettingsModal() {
             <button
               type="button"
               onClick={handleSaveAndRegenerate}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n3 px-3 text-[12px] font-medium text-t1 hover:bg-n4 transition-colors"
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n3 px-3 text-[12px] font-medium text-t2 transition-colors hover:bg-n4 hover:text-t1"
               title="Ayarları kaydeder ve bugünkü quiz için yeni sorular üretir"
             >
               <span>Kaydet & Yeniden Üret</span>
@@ -287,7 +294,7 @@ export function QuizSettingsModal() {
             <button
               type="button"
               onClick={handleSave}
-              className="flex h-8 items-center rounded-lg bg-[var(--color-accent)] px-4 text-[12px] font-medium text-black hover:opacity-90 transition-transform active:scale-95"
+              className="flex h-8 items-center rounded-lg bg-accent px-4 text-[12px] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.35)] transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.97]"
             >
               Kaydet
             </button>

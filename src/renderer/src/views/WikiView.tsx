@@ -180,10 +180,10 @@ export function WikiView() {
   return (
     <div className="flex h-full">
       {/* page list */}
-      <aside className="w-[240px] shrink-0 border-r border-[var(--border-subtle)] bg-base flex flex-col">
-        <div className="p-3 border-b border-[var(--border-subtle)]">
-          <div className="flex items-center gap-2 rounded-md bg-n2 border border-[var(--border-default)] px-2.5 py-1.5">
-            <Search size={13} className="text-t4" />
+      <aside className="flex w-[248px] shrink-0 flex-col border-r border-[var(--border-subtle)] bg-n1">
+        <div className="chrome-bar flex h-11 shrink-0 items-center px-2.5">
+          <div className="flex h-7 w-full items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-n1/70 px-2.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] transition-colors focus-within:border-[var(--border-strong)]">
+            <Search size={12} strokeWidth={2} className="shrink-0 text-t4" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -191,15 +191,15 @@ export function WikiView() {
                 if (e.key === 'Enter') runSearch()
               }}
               placeholder="Search wiki…"
-              className="flex-1 bg-transparent text-[12.5px] text-t1 placeholder:text-t4 outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[12px] text-t1 placeholder:text-t4 outline-none"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="scroll-thin flex-1 overflow-y-auto px-2 py-1.5">
           {filtered ? (
             <>
-              <div className="micro-label px-2 py-2">
+              <div className="px-2 pt-2 pb-1 text-[10px] font-semibold tracking-[0.07em] text-t4 uppercase">
                 {filtered.length} result{filtered.length === 1 ? '' : 's'}
               </div>
               {filtered.map((p) => (
@@ -207,7 +207,7 @@ export function WikiView() {
               ))}
               {extraHits.length > 0 && (
                 <>
-                  <div className="micro-label mt-1 border-t border-[var(--border-subtle)] px-2 pb-1 pt-3">
+                  <div className="mt-1.5 border-t border-[var(--border-subtle)] px-2 pt-3 pb-1 text-[10px] font-semibold tracking-[0.07em] text-t4 uppercase">
                     more matches
                   </div>
                   {extraHits.map((p) => (
@@ -223,8 +223,10 @@ export function WikiView() {
             </>
           ) : (
             byType.map(([type, pages]) => (
-              <div key={type} className="mb-3">
-                <div className="micro-label px-2 py-2">{type}</div>
+              <div key={type} className="mb-2">
+                <div className="px-2 pt-2 pb-1 text-[10px] font-semibold tracking-[0.07em] text-t4 uppercase">
+                  {type}
+                </div>
                 {pages.map((p) => (
                   <PageItem key={p.id} p={p} active={p.id === activePageId} onClick={setActivePage} />
                 ))}
@@ -233,7 +235,7 @@ export function WikiView() {
           )}
         </div>
 
-        <div className="border-t border-[var(--border-subtle)] p-3">
+        <div className="border-t border-[var(--border-subtle)] p-2.5">
           <button
             disabled={!scribe || queued}
             title={
@@ -248,24 +250,24 @@ export function WikiView() {
               window.setTimeout(() => setQueued(false), 2000)
             }}
             className={clsx(
-              'flex w-full items-center justify-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n2 px-2 py-1.5 text-[11.5px] text-t3 transition-colors',
-              !scribe || queued ? 'opacity-50' : 'hover:text-t2'
+              'flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-2 text-[12px] font-medium text-t3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors',
+              !scribe || queued ? 'opacity-50' : 'hover:bg-n4 hover:text-t1'
             )}
           >
-            <RefreshCw size={11} /> {queued ? 'Queued' : 'Regenerate stale pages'}
+            <RefreshCw size={12} strokeWidth={1.8} /> {queued ? 'Queued' : 'Regenerate stale pages'}
           </button>
         </div>
       </aside>
 
       {/* page content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-base">
         {page ? (
           <article
-            className={clsx('mx-auto max-w-2xl px-8 py-8', editing && 'flex min-h-full flex-col')}
+            className={clsx('mx-auto max-w-[720px] px-10 pt-10 pb-16', editing && 'flex min-h-full flex-col')}
           >
-            <header className="mb-5">
+            <header className="mb-7 border-b border-[var(--border-subtle)] pb-5">
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-[21px] font-semibold leading-snug tracking-tight text-t1">
+                <h1 className="text-[24px] leading-[1.25] font-semibold tracking-[-0.02em] text-t1">
                   {page.title}
                 </h1>
                 {editing ? (
@@ -274,14 +276,14 @@ export function WikiView() {
                       onClick={() => void save()}
                       disabled={saving}
                       title="Save (ctrl+s)"
-                      className="rounded-md border border-[var(--border-default)] bg-n3 px-2.5 py-1 text-[11.5px] text-t1 transition-colors hover:bg-n4 disabled:opacity-50"
+                      className="btn-accent-soft flex h-7 items-center rounded-lg px-3 text-[12px] font-medium disabled:opacity-50"
                     >
                       {saving ? 'Saving…' : 'Save'}
                     </button>
                     <button
                       onClick={cancelEdit}
                       title="Cancel (esc)"
-                      className="rounded-md px-2 py-1 text-[11.5px] text-t3 transition-colors hover:bg-n3 hover:text-t2"
+                      className="flex h-7 items-center rounded-lg px-2.5 text-[12px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
                     >
                       Cancel
                     </button>
@@ -290,13 +292,14 @@ export function WikiView() {
                   <button
                     onClick={startEdit}
                     title="Edit page"
-                    className="shrink-0 rounded-md p-1.5 text-t3 transition-colors hover:bg-n3 hover:text-t1"
+                    className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-2.5 text-[12px] text-t3 transition-colors hover:border-[var(--border-default)] hover:bg-n4 hover:text-t1"
                   >
-                    <Pencil size={13} />
+                    <Pencil size={12} strokeWidth={1.8} />
+                    Edit
                   </button>
                 )}
               </div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-t4">
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-t4">
                 <span>updated {timeAgo(page.updatedAt)}</span>
                 {page.stale && (
                   <span
@@ -310,7 +313,7 @@ export function WikiView() {
                     stale — source changed
                   </span>
                 )}
-                <span className="micro-label rounded-md border border-[var(--border-subtle)] bg-n3 px-1.5 py-0.5">
+                <span className="rounded-full border border-[var(--border-subtle)] bg-n3 px-2 py-px text-[10px] leading-4 font-semibold tracking-[0.05em] text-t3 uppercase">
                   {TYPE_LABEL[page.type] ?? page.type}
                 </span>
               </div>
@@ -319,14 +322,14 @@ export function WikiView() {
             {editing ? (
               <>
                 {confirmDiscard && (
-                  <div className="mb-3 flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-n2 px-3 py-2">
+                  <div className="pop-in mb-3 flex items-center gap-2 rounded-[10px] border border-[var(--border-default)] bg-raised px-3 py-2 shadow-[var(--shadow-card)]">
                     <span className="flex-1 text-[12px] text-t2">Unsaved — discard?</span>
                     <button
                       onClick={() => {
                         setEditing(false)
                         setConfirmDiscard(false)
                       }}
-                      className="rounded-md px-2 py-1 text-[11.5px] font-medium transition-colors hover:bg-n4"
+                      className="flex h-7 items-center rounded-lg px-2.5 text-[12px] font-medium transition-colors hover:bg-n4"
                       style={{ color: 'var(--color-needs)' }}
                     >
                       Discard
@@ -336,7 +339,7 @@ export function WikiView() {
                         setConfirmDiscard(false)
                         taRef.current?.focus()
                       }}
-                      className="rounded-md bg-n3 px-2 py-1 text-[11.5px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
+                      className="flex h-7 items-center rounded-lg bg-n3 px-2.5 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
                     >
                       Keep editing
                     </button>
@@ -366,7 +369,7 @@ export function WikiView() {
                   }}
                   spellCheck={false}
                   autoFocus
-                  className="w-full flex-1 resize-none border-0 bg-transparent p-0 font-mono text-[13px] leading-relaxed text-t2 outline-none"
+                  className="w-full flex-1 resize-none rounded-[10px] border border-[var(--border-subtle)] bg-n1/60 p-4 font-mono text-[12.5px] leading-relaxed text-t2 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors focus:border-[var(--border-default)]"
                 />
               </>
             ) : (
@@ -378,16 +381,16 @@ export function WikiView() {
                 })}
 
                 {page.backlinks.length > 0 && (
-                  <div className="mt-10 rounded-xl border border-[var(--border-subtle)] bg-n2 p-4">
-                    <div className="micro-label mb-2">Linked from</div>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mt-12 rounded-xl border border-[var(--border-default)] bg-raised p-4 shadow-[var(--shadow-card)]">
+                    <div className="micro-label mb-2.5">Linked from</div>
+                    <div className="flex flex-wrap gap-1.5">
                       {page.backlinks.map((id) => {
                         const src = wikiPages.find((p) => p.id === id)
                         return (
                           <button
                             key={id}
                             onClick={() => setActivePage(id)}
-                            className="rounded-md bg-n3 px-2 py-1 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
+                            className="flex h-7 items-center rounded-lg border border-[var(--border-subtle)] bg-n3 px-2.5 text-[12px] text-t2 transition-colors hover:border-[var(--border-default)] hover:bg-n4 hover:text-t1"
                           >
                             {src?.title ?? id}
                           </button>
@@ -400,16 +403,25 @@ export function WikiView() {
             )}
           </article>
         ) : (
-          <div className="flex h-full items-center justify-center text-t4 text-[13px]">
-            <FileText size={16} className="mr-2" /> Pick a page
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-default)] bg-raised text-t3 shadow-[var(--shadow-card)]">
+              <FileText size={17} strokeWidth={1.6} />
+            </span>
+            <span className="text-[12px] text-t3">Pick a page from the sidebar</span>
           </div>
         )}
       </main>
 
       {/* local graph — right rail */}
-      <aside className="w-[220px] shrink-0 border-l border-[var(--border-subtle)] bg-base p-4">
-        <div className="micro-label mb-3">Local graph</div>
-        <LocalGraph pages={wikiPages} activeId={activePageId} onPick={setActivePage} />
+      <aside className="flex w-[224px] shrink-0 flex-col border-l border-[var(--border-subtle)] bg-n1">
+        <div className="chrome-bar flex h-11 shrink-0 items-center px-4">
+          <span className="text-[11.5px] font-semibold tracking-[-0.005em] text-t2">Local graph</span>
+        </div>
+        <div className="p-3">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-n2/60 p-3">
+            <LocalGraph pages={wikiPages} activeId={activePageId} onPick={setActivePage} />
+          </div>
+        </div>
       </aside>
     </div>
   )
@@ -428,10 +440,11 @@ function PageItem({
     <button
       onClick={() => onClick(p.id)}
       className={clsx(
-        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors',
-        active ? 'bg-n4 text-t1' : 'text-t2 hover:bg-n3'
+        'relative flex h-7 w-full items-center gap-2 rounded-lg px-2 text-left text-[12px] transition-colors',
+        active ? 'bg-n3 font-medium text-t1' : 'text-t2 hover:bg-n3/70 hover:text-t1'
       )}
     >
+      {active && <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full bg-accent" />}
       <span className="flex-1 truncate">{p.title}</span>
       {p.stale && <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--color-warning)' }} />}
     </button>
@@ -449,7 +462,7 @@ function LocalGraph({
   onPick: (id: string) => void
 }) {
   const active = pages.find((p) => p.id === activeId)
-  if (!active) return <p className="text-[12px] text-t4">No page selected.</p>
+  if (!active) return <p className="py-6 text-center text-[12px] text-t4">No page selected.</p>
 
   const neighborIds = new Set<string>([
     ...active.links,
@@ -492,10 +505,11 @@ function LocalGraph({
             <title>{p.title}</title>
           </circle>
         ))}
-        <circle cx={cx} cy={cy} r={7} fill="var(--color-accent)" />
+        <circle cx={cx} cy={cy} r={12} fill="rgba(245,165,36,0.12)" />
+        <circle cx={cx} cy={cy} r={6.5} fill="var(--color-accent)" />
       </svg>
-      <p className="mt-2 text-center text-[11px] text-t3 truncate">{active.title}</p>
-      <p className="text-center text-[10.5px] text-t4 mt-0.5">
+      <p className="mt-2 truncate text-center text-[11.5px] font-medium text-t2">{active.title}</p>
+      <p className="tnum mt-0.5 text-center text-[10.5px] text-t4">
         {neighbors.length} linked page{neighbors.length === 1 ? '' : 's'}
       </p>
     </div>

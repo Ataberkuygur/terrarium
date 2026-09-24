@@ -71,10 +71,10 @@ export function ToastStack({
         <div
           key={t.id}
           className={clsx(
-            'pointer-events-auto flex items-center gap-2.5 rounded-lg border bg-popover py-1.5 pl-3 pr-1.5 text-[12px] shadow-lg-dark',
+            'pop-in pointer-events-auto flex h-9 items-center gap-2.5 rounded-xl border bg-popover pr-1.5 pl-3.5 text-[12px] shadow-[var(--shadow-pop)] [transform-origin:bottom_center]',
             t.tone === 'error'
-              ? 'border-[rgba(229,72,77,0.45)] text-[var(--color-needs)]'
-              : 'border-[var(--border-default)] text-t2'
+              ? 'border-[rgba(229,72,77,0.4)] text-[var(--color-needs)]'
+              : 'border-[var(--border-default)] text-t1'
           )}
         >
           {t.tone === 'error' && <AlertTriangle size={12} className="shrink-0" />}
@@ -85,7 +85,7 @@ export function ToastStack({
                 onDismiss(t.id)
                 void t.undo?.()
               }}
-              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] font-medium text-accent transition-colors hover:bg-accent-subtle"
+              className="flex h-6 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium text-accent transition-colors hover:bg-accent-subtle"
               title="Undo (Ctrl+Z)"
             >
               <Undo2 size={11} /> Undo
@@ -93,7 +93,7 @@ export function ToastStack({
           )}
           <button
             onClick={() => onDismiss(t.id)}
-            className="rounded p-0.5 text-t4 transition-colors hover:text-t2"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-t1"
             aria-label="Dismiss"
           >
             <X size={11} />

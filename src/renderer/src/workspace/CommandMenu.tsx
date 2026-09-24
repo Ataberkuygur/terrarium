@@ -158,9 +158,9 @@ export function CommandMenu({
           // The pane header is a drag handle — swallow dragstart here so
           // grabbing menu text never starts a pane drag.
           onDragStart={(e) => e.preventDefault()}
-          className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-[var(--border-default)] bg-popover p-1 shadow-md-dark"
+          className="pop-surface pop-in absolute right-0 top-full z-50 mt-1.5 w-56 rounded-xl p-1"
         >
-          <p className="micro-label px-2 pb-1 pt-1.5">Run command</p>
+          <p className="micro-label px-2 pb-1 pt-1.5 !text-[10px] !tracking-[0.07em] !text-t4">Run command</p>
 
           <Item
             checked={!current}
@@ -169,7 +169,7 @@ export function CommandMenu({
             onSelect={() => bind(undefined)}
           />
 
-          <div className="my-1 h-px bg-[var(--border-default)]" />
+          <div className="-mx-1 my-1 h-px bg-[var(--border-subtle)]" />
 
           {PRESET_COMMANDS.map((p) => (
             <Item
@@ -189,9 +189,9 @@ export function CommandMenu({
           {/* past sessions of the bound CLI — when its store is resumable */}
           {resumable && (
             <>
-              <div className="my-1 h-px bg-[var(--border-default)]" />
-              <p className="micro-label px-2 pb-1 pt-1.5">Resume session</p>
-              <div className="max-h-44 overflow-y-auto">
+              <div className="-mx-1 my-1 h-px bg-[var(--border-subtle)]" />
+              <p className="micro-label px-2 pb-1 pt-1.5 !text-[10px] !tracking-[0.07em] !text-t4">Resume session</p>
+              <div className="scroll-thin max-h-44 overflow-y-auto">
                 {sessions === null ? (
                   <p className="px-2 py-1.5 text-[12px] text-t4">Loading…</p>
                 ) : sessions.length === 0 ? (
@@ -212,7 +212,7 @@ export function CommandMenu({
             </>
           )}
 
-          <div className="my-1 h-px bg-[var(--border-default)]" />
+          <div className="-mx-1 my-1 h-px bg-[var(--border-subtle)]" />
 
           {custom ? (
             <input
@@ -234,7 +234,7 @@ export function CommandMenu({
                   setValue('')
                 }
               }}
-              className="h-7 w-full rounded-md border border-[var(--border-default)] bg-n2 px-2 font-mono text-[12px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]"
+              className="h-7 w-full rounded-lg border border-[var(--border-default)] bg-n1 px-2 font-mono text-[12px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)]"
             />
           ) : (
             <button
@@ -244,7 +244,7 @@ export function CommandMenu({
                 setValue(current && !known ? current : '')
                 setCustom(true)
               }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-t3 transition-colors hover:bg-n3 hover:text-t1"
+              className="flex h-7 w-full items-center gap-2 rounded-md px-2 text-[12px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
             >
               <span className="w-3 shrink-0" />
               Custom…
@@ -274,15 +274,25 @@ function Item({
       role="menuitemradio"
       aria-checked={checked}
       onClick={onSelect}
-      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-n3"
+      className={clsx(
+        'group flex h-7 w-full items-center gap-2 rounded-md px-2 text-left transition-colors hover:bg-n4',
+        checked && 'bg-[rgba(245,165,36,0.06)]'
+      )}
     >
       <span className="flex w-3 shrink-0 items-center justify-center text-accent">
         {checked && <Check size={11} strokeWidth={2} />}
       </span>
-      <span className={clsx('flex-1 truncate text-[12px]', checked ? 'text-t1' : 'text-t2')}>
+      <span
+        className={clsx(
+          'flex-1 truncate text-[12px]',
+          checked ? 'font-medium text-t1' : 'text-t2 group-hover:text-t1'
+        )}
+      >
         {label}
       </span>
-      {detail && <span className="tnum max-w-[80px] truncate text-[10.5px] text-t4">{detail}</span>}
+      {detail && (
+        <span className="tnum max-w-[96px] truncate font-mono text-[10px] text-t4">{detail}</span>
+      )}
     </button>
   )
 }

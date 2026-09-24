@@ -28,6 +28,7 @@ const HELP = [
   '  tnet kill <agent>                        cut the tether (ends the subagent)',
   '  tnet focus <agent>                       pop it open in the UI',
   '  tnet rename <agent> <name>               rename a subagent',
+  '  tnet topic <words…>                      label this network ("Web 1: <topic>"); no words clears',
   '  tnet info | tnet nets                    this network / all networks',
   '',
   '  <agent> = index (1, 2…) | name (prefix ok) | id | "orchestrator"',
@@ -111,7 +112,7 @@ function pad(s, n) {
 
 function printNet(info) {
   const o = info.orchestrator
-  console.log(info.name + '  (' + info.agents.length + ' subagents, default cli: ' + info.agentCommand + ')')
+  console.log((info.label || info.name) + '  (' + info.agents.length + ' subagents, default cli: ' + info.agentCommand + ')')
   console.log('  0  ' + pad(o.title, 16) + pad(o.status, 9) + o.command)
   for (const a of info.agents) {
     const quiet = a.quietSec == null ? '' : ' quiet ' + a.quietSec + 's'
@@ -158,7 +159,7 @@ async function main() {
     case 'nets':
       return out(await call('net.list'), function (r) {
         r.forEach(function (n, i) {
-          console.log(pad(i + 1, 3) + pad(n.name, 16) + n.agents.length + ' subagents' + (n.active ? '  (active tab)' : ''))
+          console.log(pad(i + 1, 3) + pad(n.label || n.name, 28) + n.agents.length + ' subagents' + (n.active ? '  (active tab)' : ''))
         })
       })
     case 'spawn': {
@@ -231,6 +232,10 @@ async function main() {
         console.log('renamed → ' + r.renamed)
       })
     }
+    case 'topic':
+      return out(await call('net.topic', { topic: pos.join(' ') }), function (r) {
+        console.log(r.topic ? 'network → ' + r.label : 'topic cleared (' + r.network + ')')
+      })
     default:
       console.error('unknown command: ' + sub + '\n')
       console.log(HELP)

@@ -67,13 +67,13 @@ export function MobileButton() {
         title="Control from your phone"
         aria-label="Mobile control"
         aria-expanded={open}
-        className="flex h-6 w-6 items-center justify-center rounded-md text-t3 transition-colors hover:bg-n3 hover:text-t2"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-t3 transition-colors hover:bg-n4 hover:text-t1"
       >
         <Smartphone size={13} strokeWidth={1.8} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-[var(--border-default)] bg-popover p-3 shadow-md-dark">
+        <div className="pop-surface pop-in absolute right-0 top-full z-50 mt-1.5 w-56 rounded-xl p-3">
           <p className="micro-label pb-2">Phone control</p>
           {info === undefined ? (
             <p className="py-6 text-center text-[12px] text-t4">…</p>

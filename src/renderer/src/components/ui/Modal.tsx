@@ -66,7 +66,7 @@ export function Modal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/55"
+            className="absolute inset-0 bg-[rgba(4,5,7,0.62)] backdrop-blur-[3px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -79,7 +79,7 @@ export function Modal({
             aria-modal="true"
             aria-label={label}
             className={cx(
-              'relative flex max-h-[85vh] max-w-[92vw] flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-lg-dark backdrop-blur-xl',
+              'relative flex max-h-[85vh] max-w-[92vw] flex-col overflow-hidden rounded-2xl border border-[var(--border-default)] bg-popover shadow-[var(--shadow-pop),0_32px_80px_-24px_rgba(0,0,0,0.7)]',
               SIZES[size]
             )}
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -88,10 +88,16 @@ export function Modal({
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           >
             {title != null && (
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-5 py-3.5">
-                <h2 className="text-[13.5px] font-medium text-t1">{title}</h2>
-                <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close dialog">
-                  <X size={13} />
+              <div className="pane-head flex h-12 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-subtle)] pr-2.5 pl-5">
+                <h2 className="text-[13.5px] font-semibold tracking-[-0.01em] text-t1">{title}</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  aria-label="Close dialog"
+                  className="text-t3"
+                >
+                  <X size={14} strokeWidth={1.8} />
                 </Button>
               </div>
             )}
@@ -99,7 +105,7 @@ export function Modal({
             <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
 
             {footer != null && (
-              <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] px-5 py-3.5">
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-n2/60 px-5 py-3">
                 {footer}
               </div>
             )}

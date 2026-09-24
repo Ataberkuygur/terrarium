@@ -129,40 +129,43 @@ export function CrewModal({ open, onClose }: CrewModalProps) {
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-        <div className="absolute inset-0 bg-black/55" />
+        <div className="absolute inset-0 bg-black/55 backdrop-blur-[3px]" />
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Manage crew"
-          className="glass shadow-lg-dark relative flex max-h-[82vh] w-[680px] max-w-[92vw] flex-col rounded-xl"
+          className="pop-surface pop-in relative flex max-h-[82vh] w-[680px] max-w-[92vw] flex-col overflow-hidden rounded-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-3.5">
-            <h2 className="text-[13.5px] font-medium text-t1">
-              Crew <span className="tnum text-[11.5px] text-t4">{merged.length}</span>
+          <div className="pane-head flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] pr-3 pl-5">
+            <h2 className="flex items-center gap-2 text-[13.5px] font-semibold tracking-[-0.01em] text-t1">
+              Crew
+              <span className="tnum rounded-full bg-n4 px-1.5 text-[10.5px] leading-4 font-medium text-t3">
+                {merged.length}
+              </span>
             </h2>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={startAdd}
-                className="flex items-center gap-1.5 rounded-md bg-n4 px-2.5 py-1.5 text-[12px] text-t1 transition-colors hover:bg-n5"
+                className="btn-accent-soft flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium"
               >
-                <Plus size={12} /> Add agent
+                <Plus size={12} strokeWidth={2.2} /> Add agent
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close crew"
-                className="rounded-md p-1.5 text-t3 transition-colors hover:bg-n4 hover:text-t1"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
               >
                 <X size={14} />
               </button>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-5 py-5">
             {merged.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-[var(--border-default)] px-3 py-6 text-center text-[12px] text-t4">
+              <div className="rounded-xl border border-dashed border-[var(--border-default)] bg-n1/40 px-3 py-10 text-center text-[12px] text-t3">
                 No agents on the roster yet — add one above.
               </div>
             ) : (
@@ -181,7 +184,7 @@ export function CrewModal({ open, onClose }: CrewModalProps) {
 
           {toast && (
             <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-              <span className="shadow-md-dark rounded-md border border-[var(--border-default)] bg-popover px-3 py-1.5 text-[11.5px] text-t2">
+              <span className="pop-surface pop-in rounded-lg px-3 py-1.5 text-[11.5px] text-t2">
                 {toast}
               </span>
             </div>

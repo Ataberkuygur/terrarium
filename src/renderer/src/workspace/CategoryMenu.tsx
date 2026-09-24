@@ -101,14 +101,14 @@ export function CategoryMenu({
       ref={rootRef}
       role="menu"
       style={{ left, top }}
-      className="fixed z-50 w-44 rounded-lg border border-[var(--border-default)] bg-popover p-1 shadow-md-dark"
+      className="pop-surface pop-in fixed z-50 w-44 rounded-xl p-1"
     >
-      <p className="micro-label px-2 pt-1 pb-0.5">
+      <p className="micro-label truncate px-2 pt-1.5 pb-1 !text-[10px] !tracking-[0.07em] !text-t4">
         Assign category{targets.length > 1 ? ` · ${targets.length} panes` : ''}
       </p>
       <div className="scroll-thin max-h-[168px] overflow-y-auto">
         {categories.length === 0 ? (
-          <p className="px-2 py-2 text-[10.5px] leading-relaxed text-t4">
+          <p className="px-2 py-2 text-[11px] leading-relaxed text-t4">
             No categories yet — create one below.
           </p>
         ) : (
@@ -118,9 +118,9 @@ export function CategoryMenu({
               type="button"
               role="menuitem"
               onClick={() => assign(c)}
-              className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-[11.5px] text-t2 transition-colors hover:bg-n3 hover:text-t1"
+              className="group flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
             >
-              <Tag size={10} strokeWidth={1.75} className="shrink-0 text-t4" />
+              <Tag size={11} strokeWidth={1.75} className="shrink-0 text-t4 transition-colors group-hover:text-accent" />
               <span className="min-w-0 flex-1 truncate">{c}</span>
               {single?.category === c && (
                 <Check size={11} strokeWidth={2} className="shrink-0 text-accent" />
@@ -130,7 +130,7 @@ export function CategoryMenu({
         )}
       </div>
 
-      <div className="my-1 h-px bg-[var(--border-default)]" />
+      <div className="-mx-1 my-1 h-px bg-[var(--border-subtle)]" />
 
       {mode === 'input' ? (
         <input
@@ -157,14 +157,14 @@ export function CategoryMenu({
               setDraft('')
             }
           }}
-          className="h-6 w-full rounded-md border border-[var(--border-default)] bg-n2 px-2 text-[11.5px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]"
+          className="h-7 w-full rounded-lg border border-[var(--border-default)] bg-n1 px-2 text-[12px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)]"
         />
       ) : (
         <button
           type="button"
           role="menuitem"
           onClick={() => setMode('input')}
-          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-[11.5px] text-t3 transition-colors hover:bg-n3 hover:text-t1"
+          className="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
         >
           <Plus size={11} strokeWidth={1.75} />
           New category…
@@ -176,7 +176,7 @@ export function CategoryMenu({
           type="button"
           role="menuitem"
           onClick={() => assign(undefined)}
-          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-[11.5px] text-t3 transition-colors hover:bg-n3 hover:text-t1"
+          className="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
         >
           <X size={11} strokeWidth={1.75} />
           Remove category

@@ -50,31 +50,31 @@ export function QuizQuestionCard({
   return (
     <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
       {/* ── Question Header Meta ── */}
-      <div className="flex items-center justify-between text-[11.5px] text-t4">
-        <div className="flex items-center gap-2">
-          <span className="rounded-md border border-[var(--border-subtle)] bg-n2 px-2 py-0.5 font-medium text-t2">
+      <div className="flex items-center justify-between gap-3 text-[11.5px] text-t4">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 rounded-full border border-[rgba(245,165,36,0.22)] bg-accent-subtle px-2 py-px text-[10.5px] leading-4 font-semibold text-accent">
             {question.categoryLabel}
           </span>
-          <span className="text-t4 truncate max-w-[260px]" title={question.sourceTitle}>
+          <span className="max-w-[260px] truncate text-t4" title={question.sourceTitle}>
             {question.sourceTitle}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 font-mono text-[11px] text-t3">
-          <span>{index + 1}</span>
+        <div className="tnum flex shrink-0 items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-n2 px-1.5 py-px text-[11px] text-t3">
+          <span className="font-medium text-t1">{index + 1}</span>
           <span className="text-t4">/</span>
           <span>{total}</span>
         </div>
       </div>
 
       {/* ── Question Body ── */}
-      <div className="rounded-xl border border-[var(--border-default)] bg-n2 p-5 shadow-sm select-text">
-        <h2 className="text-[15px] font-semibold leading-relaxed text-t1">
+      <div className="rounded-xl border border-[var(--border-default)] bg-raised p-6 shadow-[var(--shadow-card)] select-text">
+        <h2 className="text-[16px] leading-[1.55] font-semibold tracking-[-0.01em] text-t1">
           {question.question}
         </h2>
 
         {question.codeSnippet && (
-          <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-base p-3 overflow-x-auto font-mono text-[12px] text-t2 leading-normal">
-            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] text-t4 uppercase tracking-wider select-none">
+          <div className="mt-4 overflow-x-auto rounded-lg border border-[var(--border-subtle)] bg-sunken p-3.5 font-mono text-[12px] leading-normal text-t2 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]">
+            <div className="mb-2 flex items-center gap-1.5 font-sans text-[10px] font-semibold tracking-[0.07em] text-t4 uppercase select-none">
               <Code2 size={11} />
               <span>Kod Referansı</span>
             </div>
@@ -84,27 +84,28 @@ export function QuizQuestionCard({
       </div>
 
       {/* ── Option Cards ── */}
-      <div className="grid grid-cols-1 gap-2.5">
+      <div className="grid grid-cols-1 gap-2">
         {question.options.map((opt, optIndex) => {
           const letter = OPTION_LETTERS[optIndex]
           const isSelected = selectedAnswer === optIndex
           const isThisCorrect = optIndex === question.correctIndex
 
           let cardStyle =
-            'border-[var(--border-default)] bg-n2 text-t2 hover:border-[var(--border-strong)] hover:bg-n3'
-          let letterStyle = 'border-[var(--border-subtle)] bg-n3 text-t3'
+            'border-[var(--border-default)] bg-n2 text-t2 shadow-[var(--shadow-card)] hover:border-[var(--border-strong)] hover:bg-n3 hover:text-t1'
+          let letterStyle =
+            'border-[var(--border-default)] bg-n3 text-t3 group-hover:border-[rgba(245,165,36,0.35)] group-hover:text-accent'
 
           if (isAnswered) {
             if (isThisCorrect) {
               cardStyle =
-                'border-[var(--color-done)] bg-[var(--color-done)]/10 text-t1 ring-1 ring-[var(--color-done)]/30'
+                'border-[var(--color-done)]/60 bg-[var(--color-done)]/10 text-t1 shadow-[0_0_0_3px_rgba(70,167,88,0.1)]'
               letterStyle = 'bg-[var(--color-done)] text-white border-transparent'
             } else if (isSelected) {
               cardStyle =
-                'border-[var(--color-needs)] bg-[var(--color-needs)]/10 text-t1 ring-1 ring-[var(--color-needs)]/30'
+                'border-[var(--color-needs)]/60 bg-[var(--color-needs)]/10 text-t1 shadow-[0_0_0_3px_rgba(242,85,90,0.1)]'
               letterStyle = 'bg-[var(--color-needs)] text-white border-transparent'
             } else {
-              cardStyle = 'border-[var(--border-subtle)] bg-n1 opacity-50 text-t4 pointer-events-none'
+              cardStyle = 'border-[var(--border-subtle)] bg-n1 opacity-45 text-t4 pointer-events-none'
             }
           }
 
@@ -115,7 +116,7 @@ export function QuizQuestionCard({
               disabled={isAnswered}
               onClick={() => handleSelect(optIndex)}
               className={clsx(
-                'flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-150 relative group',
+                'group relative flex items-start gap-3 rounded-[10px] border px-3.5 py-3 text-left transition-all duration-150',
                 cardStyle,
                 !isAnswered && 'cursor-pointer active:scale-[0.995]'
               )}
@@ -123,7 +124,7 @@ export function QuizQuestionCard({
               {/* Option Letter Badge */}
               <span
                 className={clsx(
-                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[11px] font-bold font-mono transition-colors',
+                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold transition-colors',
                   letterStyle
                 )}
               >
@@ -131,7 +132,7 @@ export function QuizQuestionCard({
               </span>
 
               {/* Option Text */}
-              <span className="flex-1 text-[13px] leading-snug pt-0.5">{opt}</span>
+              <span className="flex-1 pt-[3px] text-[13px] leading-snug">{opt}</span>
 
               {/* Status Icon */}
               {isAnswered && isThisCorrect && (
@@ -143,8 +144,8 @@ export function QuizQuestionCard({
 
               {/* Keyboard Hint (before answer) */}
               {!isAnswered && (
-                <span className="hidden sm:inline text-[10.5px] font-mono text-t4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  [{optIndex + 1}]
+                <span className="kbd mt-0.5 hidden !text-[10px] opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+                  {optIndex + 1}
                 </span>
               )}
             </button>
@@ -156,10 +157,10 @@ export function QuizQuestionCard({
       {isAnswered && (
         <div
           className={clsx(
-            'flex flex-col gap-3 rounded-xl border p-4 animate-in fade-in slide-in-from-bottom-2 duration-200',
+            'pop-in flex flex-col gap-3 rounded-xl border p-4 shadow-[var(--shadow-card)]',
             isCorrect
-              ? 'border-[var(--color-done)]/40 bg-[var(--color-done)]/5'
-              : 'border-[var(--color-needs)]/40 bg-[var(--color-needs)]/5'
+              ? 'border-[var(--color-done)]/30 bg-[var(--color-done)]/[0.06]'
+              : 'border-[var(--color-needs)]/30 bg-[var(--color-needs)]/[0.06]'
           )}
         >
           <div className="flex items-center justify-between">
@@ -181,7 +182,7 @@ export function QuizQuestionCard({
             <button
               type="button"
               onClick={handleOpenWiki}
-              className="flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n2 px-2.5 py-1 text-[11.5px] text-t2 hover:bg-n3 hover:text-t1 transition-colors"
+              className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n2 px-2.5 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
               title="Bu konuyu Wiki'de derinlemesine incele"
             >
               <BookOpen size={12} className="text-[var(--color-accent)]" />
@@ -201,11 +202,11 @@ export function QuizQuestionCard({
                 uiTap()
                 nextQuestion()
               }}
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 text-[12px] font-medium text-black transition-transform hover:opacity-90 active:scale-95"
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-[12px] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.35),0_4px_14px_-4px_rgba(245,165,36,0.5)] transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.97]"
             >
               <span>{index + 1 === total ? 'Sonucu Gör' : 'Sonraki Soru'}</span>
               <ArrowRight size={13} strokeWidth={2} />
-              <kbd className="ml-1 text-[10px] opacity-75 font-mono">Enter</kbd>
+              <kbd className="ml-1 rounded bg-black/15 px-1 py-px font-mono text-[10px] opacity-80">Enter</kbd>
             </button>
           </div>
         </div>

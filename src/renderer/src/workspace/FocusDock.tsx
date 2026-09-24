@@ -214,7 +214,7 @@ export function FocusDock({ agent, onClose }: { agent: Agent; onClose: () => voi
         reduceMotion ? { duration: 0.12 } : { type: 'spring', stiffness: 380, damping: 36 }
       }
       style={{ height, left: leftInset, right: 12 }}
-      className="absolute bottom-3 z-20 flex flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-lg-dark backdrop-blur-xl"
+      className="absolute bottom-3 z-20 flex flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-[var(--shadow-pop)] backdrop-blur-xl backdrop-saturate-150"
     >
       {/* left-edge width grip — drag to resize horizontally */}
       <div
@@ -235,25 +235,28 @@ export function FocusDock({ agent, onClose }: { agent: Agent; onClose: () => voi
         aria-label="Resize dock"
         title="Drag to resize"
         onPointerDown={startResize}
-        className="group flex h-2 shrink-0 cursor-row-resize items-center justify-center select-none"
+        className="pane-head group flex h-2.5 shrink-0 cursor-row-resize items-center justify-center select-none"
       >
-        <span className="h-0.5 w-10 rounded-full bg-[var(--border-default)] transition-colors group-hover:bg-[var(--border-strong)] group-active:bg-[var(--color-accent)]" />
+        <span className="h-[3px] w-9 rounded-full bg-[var(--border-default)] transition-colors group-hover:bg-[var(--border-strong)] group-active:bg-[var(--color-accent)]" />
       </div>
 
       {/* header — identity + tab switch + actions */}
-      <header className="flex h-9 shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] px-2.5 select-none">
+      <header className="pane-head flex h-10 shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] pr-1.5 pl-3 select-none">
         <span
           className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: `hsl(${agent.hue} 70% 62%)` }}
+          style={{
+            background: `hsl(${agent.hue} 70% 62%)`,
+            boxShadow: `0 0 8px hsl(${agent.hue} 70% 62% / 0.45)`
+          }}
         />
-        <span className="min-w-0 truncate text-[12.5px] font-medium text-t1">{agent.name}</span>
-        <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-t4">
+        <span className="min-w-0 truncate text-[12.5px] font-semibold tracking-[-0.01em] text-t1">{agent.name}</span>
+        <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-t3">
           <StatusDot status={agent.status} size={6} />
           {STATUS_TEXT[agent.status]}
         </span>
         {agent.sleeping && <Moon size={10} className="shrink-0 text-t4" aria-label="sleeping" />}
         <span
-          className="shrink-0 rounded-full bg-n3 px-2 py-px text-[10px] font-medium uppercase tracking-[0.04em]"
+          className="shrink-0 rounded-full border border-[var(--border-subtle)] bg-n3 px-2 py-px text-[9.5px] font-semibold uppercase tracking-[0.06em]"
           style={{ color: domain.color }}
         >
           {domain.label}
@@ -261,18 +264,32 @@ export function FocusDock({ agent, onClose }: { agent: Agent; onClose: () => voi
         {task && <span className="min-w-0 truncate text-[11px] text-t4">· {task.title}</span>}
 
         {/* tab switch — segmented, mirrors the workspace preset bar */}
-        <div className="ml-1 flex items-center gap-0.5 rounded-md border border-[var(--border-subtle)] p-0.5">
+        <div className="seg-track ml-1 shrink-0">
+          <span
+            aria-hidden
+            className="seg-thumb"
+            style={{
+              left: 2,
+              width: 80,
+              transform: `translateX(${TABS.findIndex((t) => t.id === tab) * 80}px)`
+            }}
+          />
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
+              aria-pressed={tab === t.id}
               className={cx(
-                'flex h-6 items-center gap-1 rounded px-2 text-[11px] transition-colors',
-                tab === t.id ? 'bg-n4 text-t1' : 'text-t3 hover:bg-n3 hover:text-t2'
+                'relative z-[1] flex h-[24px] w-[80px] items-center justify-center gap-1.5 rounded-[7px] text-[11.5px] font-medium transition-colors duration-150',
+                tab === t.id ? 'text-t1' : 'text-t3 hover:text-t2'
               )}
             >
-              <t.icon size={11} strokeWidth={1.75} />
+              <t.icon
+                size={12}
+                strokeWidth={tab === t.id ? 2 : 1.75}
+                className={tab === t.id ? 'text-accent' : undefined}
+              />
               {t.label}
             </button>
           ))}
@@ -284,8 +301,7 @@ export function FocusDock({ agent, onClose }: { agent: Agent; onClose: () => voi
           <button
             type="button"
             onClick={nudge}
-            className="flex h-7 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium transition-colors"
-            style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}
+            className="btn-accent-soft flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium"
           >
             <Zap size={11} />
             Nudge
@@ -327,7 +343,7 @@ export function FocusDock({ agent, onClose }: { agent: Agent; onClose: () => voi
 
       {/* body — same content components the workspace panes render; keys
           force a remount per agent so drafts/sessions never leak across */}
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 bg-n1">
         {tab === 'chat' ? (
           <ChatPane key={agent.id} leaf={chatLeaf} />
         ) : (

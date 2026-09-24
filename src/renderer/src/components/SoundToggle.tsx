@@ -30,7 +30,7 @@ export function SoundToggle() {
       onClick={toggle}
       aria-pressed={on}
       title={on ? 'Mute office audio' : 'Unmute office audio'}
-      className="no-drag flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border-subtle)] bg-n2 text-t3 transition-colors duration-100 hover:text-t2"
+      className="no-drag flex h-7 w-7 items-center justify-center rounded-md text-t3 transition-colors duration-100 hover:bg-n4 hover:text-t1"
     >
       {on ? <Volume2 size={14} strokeWidth={1.8} /> : <VolumeX size={14} strokeWidth={1.8} />}
     </button>

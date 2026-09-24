@@ -1,23 +1,30 @@
 // ── OrchestrationRail — network terminals in the Sessions rail ───────
-// Every orchestration network listed under the grid's groups: the
-// orchestrator, then its subagents, each with its CLI mark and live
-// status. Clicking a row flips the workspace to orchestration, activates
-// that network's tab and pops the subagent open.
+// Every orchestration network listed under the grid's groups, headed by
+// its label ("Web 1: Senior loop"): the orchestrator, then its subagents,
+// each with its CLI mark, live status and — like grid terminals — the
+// CLI's past sessions (collapsed by default; networks get crowded).
+// Clicking a row flips the workspace to orchestration, activates that
+// network's tab and pops the subagent open.
 
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { commandSessionId } from '../lib/panes'
+import { commandSessionId, type PaneAction } from '../lib/panes'
 import {
   statusVersionSnapshot,
   focusOrchestrationNode,
+  networkLabel,
   nodeStatus,
   effectiveCommand,
   subscribeStatus,
   useOrch,
   type NodeStatus,
+  type OrchNetwork,
   type OrchNode
 } from '../lib/orchestration'
 import { cliBrand } from '../components/CliBrand'
+import { useApp } from '../lib/store'
+import { PaneDispatchContext } from './pane-context'
+import { LeafSessions } from './SessionRail'
 
 const STATUS_COLOR: Record<NodeStatus, string> = {
   starting: 'var(--color-t4)',
@@ -31,60 +38,107 @@ export function OrchestrationRail() {
   const enabled = useOrch((s) => s.enabled)
   const activeId = useOrch((s) => s.activeId)
   const expandedId = useOrch((s) => s.expandedId)
+  const projectRoot = useApp((s) => s.projects[0]?.rootPath)
   useSyncExternalStore(subscribeStatus, statusVersionSnapshot) // live status dots — flips only
+  // session resumes from the rail patch the network node, not a grid leaf
+  const dispatch = useCallback((action: PaneAction) => {
+    if (action.type === 'update') useOrch.getState().updateNode(action.leafId, action.patch)
+  }, [])
   if (networks.length === 0) return null
 
-  const row = (node: OrchNode, label: string, hub: boolean, current: boolean) => {
+  const row = (node: OrchNode, label: string, hub: boolean, current: boolean, task?: string) => {
     const status = nodeStatus(commandSessionId(node))
     const brand = cliBrand(effectiveCommand(node))
     return (
-      <button
-        key={node.id}
-        type="button"
-        onClick={() => focusOrchestrationNode(node.id)}
-        title={`${label} — ${brand.label}${node.task ? `\n${node.task}` : ''}`}
-        className={clsx(
-          'flex w-full items-center gap-1.5 rounded-md py-1 pr-2 text-left transition-colors select-none',
-          hub ? 'pl-2' : 'pl-[22px]',
-          current ? 'bg-n3 ring-1 ring-[var(--border-strong)]' : 'hover:bg-n2'
-        )}
-      >
-        <span className="flex shrink-0 items-center">{brand.mark(11)}</span>
-        <span
+      <div key={node.id}>
+        <button
+          type="button"
+          onClick={() => focusOrchestrationNode(node.id)}
+          title={`${label} — ${brand.label}${task ? `\n${task}` : ''}`}
           className={clsx(
-            'min-w-0 flex-1 truncate text-[11px]',
-            current ? 'text-t1' : hub ? 'text-t2' : 'text-t3'
+            'relative mx-1 flex w-[calc(100%-8px)] items-center gap-2 rounded-md py-[5px] pr-2 text-left transition-colors select-none',
+            hub ? 'pl-2' : 'pl-[20px]',
+            current ? 'bg-n3' : 'hover:bg-n2'
           )}
         >
-          {label}
-        </span>
-        <span
-          className={clsx('h-[5px] w-[5px] shrink-0 rounded-full', status === 'busy' && 'status-pulse')}
-          style={{ background: STATUS_COLOR[status] }}
+          {current && (
+            <span className="absolute top-1.5 bottom-1.5 left-0 w-[2px] rounded-full bg-[var(--color-accent)]" />
+          )}
+          <span className="flex shrink-0 items-center">{brand.mark(11)}</span>
+          <span
+            className={clsx(
+              'min-w-0 flex-1 truncate text-[11.5px]',
+              current ? 'font-medium text-t1' : hub ? 'text-t2' : 'text-t3'
+            )}
+          >
+            {label}
+          </span>
+          <span
+            className={clsx('h-[5px] w-[5px] shrink-0 rounded-full', status === 'busy' && 'status-pulse')}
+            style={{ background: STATUS_COLOR[status] }}
+          />
+        </button>
+        <LeafSessions
+          leaf={node}
+          projectRoot={projectRoot}
+          defaultOpen={false}
+          indent={hub ? 20 : 32}
         />
-      </button>
+      </div>
     )
   }
 
   return (
-    <div className="pb-1">
-      <div className="flex items-center gap-1.5 px-2.5 pt-1.5 pb-0.5 select-none">
-        <span className="h-1 w-1 rounded-full" style={{ background: 'var(--color-accent)' }} />
-        <span className="min-w-0 flex-1 truncate text-[10px] font-medium tracking-[0.05em] text-t4 uppercase">
-          Orchestration
-        </span>
+    <PaneDispatchContext.Provider value={dispatch}>
+      <div className="pb-1">
+        <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-0.5 select-none">
+          <span className="h-1 w-1 rounded-full" style={{ background: 'var(--color-accent)' }} />
+          <span className="min-w-0 flex-1 truncate text-[10px] font-medium tracking-[0.06em] text-t4 uppercase">
+            Orchestration
+          </span>
+        </div>
+        {networks.map((net) => (
+          <NetworkBlock
+            key={net.id}
+            net={net}
+            active={enabled && net.id === activeId}
+            expandedId={expandedId}
+            row={row}
+          />
+        ))}
       </div>
-      {networks.map((net) => {
-        const netActive = enabled && net.id === activeId
-        return (
-          <div key={net.id}>
-            {row(net.orchestrator, `${net.name} · Orchestrator`, true, netActive && !expandedId)}
-            {net.agents.map((a, i) =>
-              row(a, a.title ?? `Subagent ${i + 1}`, false, netActive && expandedId === a.id)
-            )}
-          </div>
-        )
-      })}
+    </PaneDispatchContext.Provider>
+  )
+}
+
+function NetworkBlock({
+  net,
+  active,
+  expandedId,
+  row
+}: {
+  net: OrchNetwork
+  active: boolean
+  expandedId: string | null
+  row: (node: OrchNode, label: string, hub: boolean, current: boolean, task?: string) => React.ReactNode
+}) {
+  return (
+    <div className="mb-1">
+      {/* network label — "Web 1: Senior loop" */}
+      <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-1 select-none" title={networkLabel(net)}>
+        <span className="min-w-0 truncate text-[11px]">
+          <span className="font-semibold text-t2">
+            {net.name}
+            {net.topic && <span className="text-t4">:</span>}
+          </span>
+          {net.topic && <span className="font-medium text-t3"> {net.topic}</span>}
+        </span>
+        <span className="tnum ml-auto shrink-0 text-[9.5px] text-t4/70">{net.agents.length + 1}</span>
+      </div>
+      {row(net.orchestrator, 'Orchestrator', true, active && !expandedId)}
+      {net.agents.map((a, i) =>
+        row(a, a.title ?? `Subagent ${i + 1}`, false, active && expandedId === a.id, a.task)
+      )}
     </div>
   )
 }

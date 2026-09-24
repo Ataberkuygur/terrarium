@@ -106,21 +106,25 @@ export function NewTerminalDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,5,7,0.62)] backdrop-blur-[3px]"
+      onClick={onClose}
+    >
       <div
-        className="w-[340px] rounded-xl border border-[var(--border-default)] bg-popover p-4 shadow-lg-dark"
+        className="pop-in w-[360px] overflow-hidden rounded-2xl border border-[var(--border-default)] bg-popover shadow-[var(--shadow-pop),0_32px_80px_-24px_rgba(0,0,0,0.7)] [transform-origin:center]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="m-0 text-[13px] font-semibold text-t1">New terminal</h3>
+        <div className="pane-head flex h-12 items-center justify-between border-b border-[var(--border-subtle)] pr-2.5 pl-5">
+          <h3 className="m-0 text-[13.5px] font-semibold tracking-[-0.01em] text-t1">New terminal</h3>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-t4 transition-colors hover:bg-n4 hover:text-t2"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
-            <X size={13} />
+            <X size={14} strokeWidth={1.8} />
           </button>
         </div>
 
+        <div className="px-5 pt-4 pb-1">
         <div className="micro-label mb-1.5">Name</div>
         <div className="mb-3 flex items-center gap-1.5">
           <input
@@ -129,14 +133,14 @@ export function NewTerminalDialog({
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void create()}
             placeholder="Terminal name…"
-            className="flex-1 rounded-md border border-[var(--border-default)] bg-n2 px-2.5 py-1.5 text-[12.5px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]"
+            className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--border-default)] bg-n1/70 px-2.5 text-[12.5px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)]"
           />
           <button
             onClick={() => setName(freshLatinName())}
             title="Random name"
-            className="rounded-md border border-[var(--border-default)] p-1.5 text-t3 transition-colors hover:border-[var(--border-strong)] hover:text-t1"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] text-t3 transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1"
           >
-            <Dices size={13} />
+            <Dices size={14} />
           </button>
         </div>
 
@@ -147,10 +151,10 @@ export function NewTerminalDialog({
               key={c.key}
               onClick={() => setCli(c.key)}
               className={clsx(
-                'rounded-md border px-2.5 py-1 text-[11.5px] transition-colors',
+                'h-7 rounded-lg border px-2.5 text-[12px] transition-colors',
                 cli === c.key
-                  ? 'border-accent bg-accent-subtle text-accent'
-                  : 'border-[var(--border-default)] text-t3 hover:border-[var(--border-strong)] hover:text-t2'
+                  ? 'border-[rgba(245,165,36,0.45)] bg-accent-subtle font-medium text-accent'
+                  : 'border-[var(--border-default)] text-t3 hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1'
               )}
             >
               {c.label}
@@ -158,7 +162,9 @@ export function NewTerminalDialog({
           ))}
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-n2/60 px-5 py-3">
           <Button size="sm" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
@@ -204,7 +210,7 @@ function TerminalChip({ worker }: { worker: TerminalWorker }) {
   }
 
   return (
-    <div className="group flex min-w-[240px] max-w-[360px] shrink-0 items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-base px-2.5 py-2">
+    <div className="group flex max-w-[360px] min-w-[240px] shrink-0 items-center gap-2.5 rounded-[10px] border border-[var(--border-default)] bg-raised px-3 py-2 shadow-[var(--shadow-card)] transition-colors hover:border-[var(--border-strong)]">
       <StatusDot status={WORKER_DOT[worker.status]} size={7} />
 
       <div className="min-w-0 flex-1">
@@ -222,14 +228,14 @@ function TerminalChip({ worker }: { worker: TerminalWorker }) {
                   setEditing(false)
                 }
               }}
-              className="w-24 rounded border border-[var(--border-strong)] bg-n2 px-1 py-px text-[12px] text-t1 outline-none"
+              className="w-24 rounded-md border border-[rgba(245,165,36,0.45)] bg-n2 px-1.5 py-px text-[12px] text-t1 outline-none"
             />
           ) : (
             <>
               <button
                 onClick={() => focusTerminal(worker)}
                 title="Focus this terminal in Workspace"
-                className="truncate text-[12px] font-medium text-t1 hover:text-accent"
+                className="truncate text-[12px] font-medium text-t1 transition-colors hover:text-accent"
               >
                 {worker.name}
               </button>
@@ -239,26 +245,26 @@ function TerminalChip({ worker }: { worker: TerminalWorker }) {
                   setEditing(true)
                 }}
                 title="Rename terminal"
-                className="shrink-0 rounded p-0.5 text-t4 opacity-0 transition-opacity hover:text-t2 group-hover:opacity-100"
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-t4 opacity-0 transition-[opacity,color] group-hover:opacity-100 hover:text-t1"
               >
                 <Pencil size={9} />
               </button>
             </>
           )}
           {worker.cli && worker.cli !== worker.name.toLowerCase() && (
-            <span className="shrink-0 text-[10px] text-t4">· {worker.cli}</span>
+            <span className="shrink-0 font-mono text-[10px] text-t4">· {worker.cli}</span>
           )}
           <span className="shrink-0 text-[10px] text-t4">— {DOMAIN_LABELS[worker.domain]}</span>
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">
-          <span className={clsx('shrink-0 text-[10px]', WORKER_TONE[worker.status])}>
+          <span className={clsx('shrink-0 text-[10.5px] font-medium', WORKER_TONE[worker.status])}>
             {WORKER_LABEL[worker.status]}
           </span>
           {activeCard && (
-            <span className="truncate text-[10px] text-t3">— {activeCard.title}</span>
+            <span className="truncate text-[10.5px] text-t3">— {activeCard.title}</span>
           )}
           {worker.status === 'exited' && !activeCard && (
-            <span className="truncate text-[10px] text-t4">— assign to respawn</span>
+            <span className="truncate text-[10.5px] text-t4">— assign to respawn</span>
           )}
         </div>
       </div>
@@ -267,9 +273,9 @@ function TerminalChip({ worker }: { worker: TerminalWorker }) {
         <button
           onClick={() => void getEngine().moveCard(activeCard.id, 'done')}
           title="Mark its task done"
-          className="flex shrink-0 items-center gap-1 rounded-md border border-[var(--border-default)] px-1.5 py-0.5 text-[10px] text-t3 transition-colors hover:border-[var(--border-strong)] hover:text-t1"
+          className="flex h-6 shrink-0 items-center gap-1 rounded-md border border-[rgba(70,167,88,0.35)] bg-[rgba(70,167,88,0.07)] px-1.5 text-[10.5px] font-medium text-[var(--color-done)] transition-colors hover:border-[rgba(70,167,88,0.55)] hover:bg-[rgba(70,167,88,0.14)]"
         >
-          <Check size={9} /> done
+          <Check size={10} /> done
         </button>
       )}
 
@@ -283,15 +289,15 @@ function TerminalChip({ worker }: { worker: TerminalWorker }) {
               if (e.key === 'Enter') void submit()
             }}
             placeholder="assign task…"
-            className="w-24 rounded-md border border-[var(--border-default)] bg-n2 px-1.5 py-1 text-[10.5px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]"
+            className="h-6 w-24 rounded-md border border-[var(--border-default)] bg-n1/70 px-2 text-[11px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)]"
           />
           <button
             onClick={() => void submit()}
             disabled={pending || !draft.trim()}
             title="Create a card and assign it to this terminal"
-            className="rounded-md border border-[var(--border-default)] p-1 text-t3 transition-colors hover:border-[var(--border-strong)] hover:text-t1 disabled:opacity-40"
+            className="btn-accent-soft flex h-6 w-6 items-center justify-center rounded-md disabled:pointer-events-none disabled:opacity-40"
           >
-            <ArrowRight size={10} />
+            <ArrowRight size={11} />
           </button>
         </div>
       )}
@@ -320,12 +326,12 @@ export function TerminalsSection({
 
   return (
     <section className="mb-4">
-      <div className="mb-1.5 flex items-center gap-1.5 px-1">
+      <div className="mb-2 flex items-center gap-1.5 px-0.5">
         <button
           onClick={toggle}
           aria-expanded={!collapsed}
           title={collapsed ? 'Expand crew' : 'Collapse crew'}
-          className="flex items-center gap-1.5 rounded-md py-1 text-left transition-colors hover:text-t2"
+          className="flex h-7 items-center gap-2 rounded-lg px-1 text-left transition-colors hover:text-t2"
         >
           <ChevronRight
             size={11}
@@ -334,22 +340,22 @@ export function TerminalsSection({
               !collapsed && 'rotate-90'
             )}
           />
-          <h2 className="micro-label">Crew</h2>
-          <span className="text-[11px] tnum text-t4">{workers.length}</span>
+          <h2 className="m-0 text-[12px] font-semibold tracking-[-0.005em] text-t1">Crew</h2>
+          <span className="tnum rounded-full bg-n3 px-1.5 text-[10px] leading-4 font-medium text-t3">{workers.length}</span>
         </button>
         <button
           onClick={onNewTerminal}
           title="Launch a new terminal — pick a name and a CLI"
-          className="ml-auto flex items-center gap-1 rounded-md border border-dashed border-[var(--border-strong)] px-2 py-0.5 text-[10.5px] text-t3 transition-colors hover:text-t2"
+          className="ml-auto flex h-7 items-center gap-1.5 rounded-lg px-2 text-[11.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
         >
-          <Plus size={10} /> New terminal
+          <Plus size={12} /> New terminal
         </button>
       </div>
 
       {!collapsed &&
         (workers.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-xl border border-dashed border-[var(--border-subtle)] px-3 py-3">
-            <p className="flex-1 text-[12px] text-t4">
+          <div className="flex items-center gap-2 rounded-xl border border-dashed border-[var(--border-default)] bg-n1/50 py-2.5 pr-2.5 pl-4">
+            <p className="flex-1 text-[12px] text-t3">
               No open terminals — launch one or open Workspace.
             </p>
             <Button size="sm" variant="outline" onClick={onNewTerminal}>
@@ -364,14 +370,14 @@ export function TerminalsSection({
             </Button>
           </div>
         ) : (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="scroll-thin flex gap-2 overflow-x-auto pb-1">
             {workers.map((w) => (
               <TerminalChip key={w.leaf.id} worker={w} />
             ))}
             <button
               onClick={onNewTerminal}
               title="Launch a new terminal"
-              className="flex w-[120px] shrink-0 items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border-subtle)] text-[11px] text-t4 transition-colors hover:border-[var(--border-strong)] hover:text-t2"
+              className="flex w-[120px] shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[var(--border-default)] text-[11.5px] text-t4 transition-colors hover:border-[var(--border-strong)] hover:bg-n2 hover:text-t2"
             >
               <Plus size={11} /> New
             </button>
@@ -425,7 +431,7 @@ export function AssignMenu({
           e.stopPropagation()
           setOpen(!open)
         }}
-        className="flex items-center gap-1 rounded-md border border-dashed border-[var(--border-strong)] px-1.5 py-0.5 text-[10.5px] text-t3 hover:text-t2 transition-colors"
+        className="flex h-5 items-center gap-1 rounded-md border border-dashed border-[var(--border-strong)] px-1.5 text-[10.5px] text-t3 transition-colors hover:border-[rgba(245,165,36,0.5)] hover:bg-accent-subtle hover:text-accent"
       >
         <Plus size={10} /> Assign
       </button>
@@ -439,7 +445,7 @@ export function AssignMenu({
             }}
           />
           <div
-            className="fixed z-50 w-52 rounded-lg border border-[var(--border-default)] bg-popover p-1 shadow-lg-dark"
+            className="pop-surface pop-in fixed z-50 w-52 rounded-xl p-1 [transform-origin:top_left]"
             style={pos}
             onClick={(e) => e.stopPropagation()}
           >
@@ -455,15 +461,15 @@ export function AssignMenu({
                   setOpen(false)
                 }
               }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-t2 hover:bg-n4 hover:text-t1 disabled:opacity-50"
+              className="flex h-7 w-full items-center gap-2 rounded-lg px-2 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1 disabled:opacity-50"
             >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-n5 text-t3">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-accent">
                 <User size={9} />
               </span>
               <span className="truncate">me</span>
             </button>
 
-            {workers.length > 0 && <div className="mx-1 my-1 border-t border-[var(--border-subtle)]" />}
+            {workers.length > 0 && <div className="-mx-1 my-1 border-t border-[var(--border-subtle)]" />}
             {workers.map((w) => {
               const tag = w.status === 'exited' ? 'exited' : w.busy ? 'busy' : null
               return (
@@ -479,9 +485,9 @@ export function AssignMenu({
                       setOpen(false)
                     }
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-t2 hover:bg-n4 hover:text-t1 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-t2"
+                  className="flex h-7 w-full items-center gap-2 rounded-lg px-2 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-t2"
                 >
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-n5 text-t3">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-n5 text-t2">
                     <Terminal size={9} />
                   </span>
                   <span className="truncate">
@@ -490,7 +496,7 @@ export function AssignMenu({
                   </span>
                   <span className="ml-auto shrink-0">
                     {tag ? (
-                      <span className="text-[9.5px] text-t4">{tag}</span>
+                      <span className="rounded bg-n4 px-1 text-[9.5px] text-t4">{tag}</span>
                     ) : (
                       <StatusDot status="idle" size={5} />
                     )}
@@ -499,13 +505,13 @@ export function AssignMenu({
               )
             })}
 
-            <div className="mx-1 my-1 border-t border-[var(--border-subtle)]" />
+            <div className="-mx-1 my-1 border-t border-[var(--border-subtle)]" />
             <button
               onClick={() => {
                 setOpen(false)
                 onNewTerminal(card)
               }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-t2 hover:bg-n4 hover:text-t1"
+              className="flex h-7 w-full items-center gap-2 rounded-lg px-2 text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
             >
               <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-strong)] text-t3">
                 <Plus size={9} />

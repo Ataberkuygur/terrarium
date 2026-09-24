@@ -86,7 +86,7 @@ const ACTION_ICON: Partial<Record<PaneKind, LucideIcon>> = {
 }
 
 const actionBtn =
-  'flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n3 px-2.5 text-[11.5px] text-t2 transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1'
+  'btn-accent-soft flex h-7 items-center gap-1.5 rounded-lg px-3 text-[12px] font-medium'
 
 /**
  * Placeholder body for leaf kinds that have no content component bound yet.
@@ -120,13 +120,18 @@ export function EmptyPane({ leaf, children }: { leaf: PaneLeaf; children?: React
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 select-none">
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-n3 p-3 text-t4">
-        <Icon size={18} strokeWidth={1.5} />
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3.5 p-6 select-none">
+      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-default)] bg-gradient-to-b from-n4 to-n3 text-t3 shadow-[var(--shadow-card)]">
+        <Icon size={18} strokeWidth={1.6} />
+        <span
+          aria-hidden
+          className="absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full ring-2 ring-n2"
+          style={{ background: meta.dot }}
+        />
       </div>
       <div className="text-center">
-        <p className="text-[13px] font-medium text-t2">{meta.empty}</p>
-        <p className="mx-auto mt-1 max-w-[220px] text-[11.5px] leading-relaxed text-t4">
+        <p className="text-[13px] font-medium tracking-[-0.01em] text-t1">{meta.empty}</p>
+        <p className="mx-auto mt-1 max-w-[230px] text-[12px] leading-relaxed text-t3">
           {meta.hint}
         </p>
       </div>
@@ -152,7 +157,7 @@ export function EmptyPane({ leaf, children }: { leaf: PaneLeaf; children?: React
               setUrl('')
             }
           }}
-          className="h-7 w-[200px] rounded-md border border-[var(--border-default)] bg-n2 px-2 font-mono text-[11.5px] text-t1 outline-none select-text placeholder:text-t4 focus:border-[var(--border-strong)]"
+          className="h-7 w-[220px] rounded-lg border border-[var(--border-default)] bg-n1 px-2.5 font-mono text-[11.5px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors select-text placeholder:text-t4 focus:border-[rgba(245,165,36,0.45)]"
         />
       )}
 

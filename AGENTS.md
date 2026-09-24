@@ -60,6 +60,11 @@ process):
   `curl -s $TERRARIUM_WS_CMD -d '{"cmd":"net.list"}'`.
 - `net.new` never steals the user's screen; clean up test networks with
   `{"cmd":"net.close","net":"<name>"}`.
+- Networks carry an optional `topic` shown as "Web 1: Senior loop" (tab
+  double-click, `net.topic` / `tnet topic` / MCP `orchestrator_topic`).
+- Two layouts (`useOrch.layout`, toolbar switch): **Canvas** (pan/zoom web,
+  `layout.ts` slots) and **Workspace** (`tileNetwork` — hub centred, agents
+  tiled left → right → top → bottom, then top/bottom/left/right per round).
 - Canvas pan/zoom (`lib/canvas-nav.ts`) is semantic: layout at `rect * z`,
   terminals get `zoom` (font scales, grid held — no pty resize). App-wide zoom
   is owned by main (`src/main/app-zoom.ts`, Ctrl+= / Ctrl+- / Ctrl+0).

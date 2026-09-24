@@ -38,15 +38,15 @@ export default function ReviewView({
   return (
     <div className="flex h-full flex-col bg-canvas">
       {/* ── run header ── */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-3">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-n5 text-[10px] font-bold text-t1">
+      <div className="pane-head flex h-14 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-n6 to-n5 text-[11px] font-semibold text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.4)]">
           {run.agentName[0] ?? '?'}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-t1">{run.agentName}</span>
+            <span className="text-[13px] font-semibold tracking-[-0.01em] text-t1">{run.agentName}</span>
             {run.branch && (
-              <span className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-n3 px-1.5 py-0.5 font-mono text-[10.5px] text-t2">
+              <span className="flex h-5 items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-n1 px-1.5 font-mono text-[10.5px] text-t2">
                 <GitBranch size={10} className="text-t3" />
                 {run.branch}
               </span>
@@ -56,21 +56,23 @@ export default function ReviewView({
             <p className="mt-0.5 truncate text-[11.5px] text-t3">{run.summary}</p>
           )}
         </div>
-        <span className="micro-label shrink-0">Review</span>
+        <span className="shrink-0 rounded-full bg-accent-subtle px-2 py-px text-[10px] font-semibold tracking-wide text-accent uppercase">
+          Review
+        </span>
       </div>
 
       {/* ── checks (collapsible) ── */}
       <div className="shrink-0 border-b border-[var(--border-subtle)]">
         <button
           onClick={() => setChecksOpen((o) => !o)}
-          className="flex w-full items-center gap-2 px-4 py-2 transition-colors hover:bg-n2"
+          className="flex h-9 w-full items-center gap-2 px-5 transition-colors hover:bg-n2"
         >
           <ChevronDown
             size={13}
             className={clsx('text-t3 transition-transform duration-150', !checksOpen && '-rotate-90')}
           />
           <span className="micro-label">Checks</span>
-          <span className="text-[11px] tnum text-t4">{run.checks.length}</span>
+          <span className="tnum rounded-full bg-n3 px-1.5 text-[10px] leading-4 font-medium text-t3">{run.checks.length}</span>
           <span className="ml-auto flex items-center gap-2">
             {failing > 0 && <span className="text-[11px] font-medium text-error">{failing} failing</span>}
             {pending > 0 && (

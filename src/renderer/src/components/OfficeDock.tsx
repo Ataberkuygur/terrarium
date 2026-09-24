@@ -161,7 +161,7 @@ export function OfficeDock() {
     <div
       className={
         pip
-          ? 'fixed z-40 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900/85 shadow-2xl shadow-black/50 backdrop-blur-xl'
+          ? 'fixed z-40 flex flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-n2/90 shadow-[var(--shadow-pop)] backdrop-blur-xl'
           : 'flex h-full flex-col'
       }
       style={
@@ -174,25 +174,25 @@ export function OfficeDock() {
     >
       {/* mini-player title bar - drag handle */}
       <div
-        className="h-8 shrink-0 cursor-move select-none items-center gap-1.5 border-b border-white/10 px-2"
+        className="pane-head h-8 shrink-0 cursor-move select-none items-center gap-1.5 border-b border-[var(--border-subtle)] pr-1 pl-2.5"
         style={{ display: pip ? 'flex' : 'none' }}
         onPointerDown={onHeaderPointerDown}
       >
-        <PictureInPicture2 size={12} className="shrink-0 text-amber-400" />
-        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-wide text-white/85">
+        <PictureInPicture2 size={12} className="shrink-0 text-accent" />
+        <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold tracking-[-0.005em] text-t2">
           Office
         </span>
         <button
           onClick={() => setView('office')}
           title="Back to Office tab"
-          className="cursor-pointer rounded-md p-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-t3 transition-colors hover:bg-n4 hover:text-t1"
         >
           <Maximize2 size={12} />
         </button>
         <button
           onClick={() => setOfficePiP(false)}
           title="Close mini player"
-          className="cursor-pointer rounded-md p-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-t3 transition-colors hover:bg-n4 hover:text-t1"
         >
           <X size={13} />
         </button>
@@ -205,7 +205,7 @@ export function OfficeDock() {
 
       {/* corner resize grip */}
       <div
-        className="absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize text-neutral-500 transition-colors hover:text-neutral-300"
+        className="absolute right-0.5 bottom-0.5 h-4 w-4 cursor-nwse-resize text-t4 transition-colors hover:text-t2"
         style={{ display: pip ? 'block' : 'none' }}
         onPointerDown={onGripPointerDown}
       >

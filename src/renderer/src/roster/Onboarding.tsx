@@ -65,7 +65,7 @@ const FEATURES = [
 ]
 
 const inputCls =
-  'w-full rounded-md border border-[var(--border-default)] bg-n2 px-3 py-2 text-[13px] text-t1 placeholder:text-t4 outline-none focus:border-[var(--border-strong)] transition-colors'
+  'w-full rounded-lg border border-[var(--border-default)] bg-n1 px-3 py-2 text-[13px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] placeholder:text-t4 outline-none hover:border-[var(--border-strong)] focus:border-[rgba(245,165,36,0.45)] transition-colors'
 
 export function Onboarding({
   onFinish,
@@ -130,30 +130,32 @@ export function Onboarding({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(720px 320px at 50% 12%, rgba(245,165,36,0.06), transparent 70%)'
+            'radial-gradient(720px 340px at 50% 10%, rgba(245,165,36,0.075), transparent 70%)'
         }}
       />
 
-      <div className="glass shadow-lg-dark relative flex w-[560px] max-w-[92vw] flex-col rounded-2xl">
-        <div className="min-h-[340px] px-7 py-6">
+      <div className="pop-surface pop-in relative flex w-[580px] max-w-[92vw] flex-col overflow-hidden rounded-2xl">
+        <div className="min-h-[360px] px-8 py-7">
           {step === 0 && (
             <section aria-label="Welcome">
-              <div className="shadow-md-dark flex h-11 w-11 items-end justify-end rounded-xl bg-accent p-1.5">
-                <div
-                  className="h-3.5 w-3.5 rounded-[4px]"
-                  style={{ background: 'var(--color-on-accent)' }}
-                />
-              </div>
-              <h1 className="mt-5 text-[20px] font-semibold tracking-tight text-t1">
+              <span className="brand-glyph relative block h-11 w-11 rounded-xl">
+                <span className="absolute inset-[12px] rounded-[5px] bg-[rgba(23,16,6,0.55)]" />
+              </span>
+              <h1 className="mt-5 text-[21px] font-semibold tracking-[-0.02em] text-t1">
                 Welcome to Terrarium
               </h1>
               <p className="mt-1 text-[13.5px] text-t3">
                 An office where your AI crew works.
               </p>
-              <ul className="mt-6 space-y-2.5">
+              <ul className="mt-6 space-y-1.5">
                 {FEATURES.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-2.5 text-[13px] text-t2">
-                    <Icon size={14} className="shrink-0 text-t3" />
+                  <li
+                    key={text}
+                    className="flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-n1/50 px-3 py-2.5 text-[13px] text-t2"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-n4 text-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                      <Icon size={13} />
+                    </span>
                     {text}
                   </li>
                 ))}
@@ -163,7 +165,7 @@ export function Onboarding({
 
           {step === 1 && (
             <section aria-label="Project">
-              <h1 className="text-[20px] font-semibold tracking-tight text-t1">
+              <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-t1">
                 Point at a project
               </h1>
               <p className="mt-1 text-[13px] text-t3">
@@ -181,7 +183,7 @@ export function Onboarding({
                 <button
                   type="button"
                   onClick={browse}
-                  className="flex shrink-0 items-center gap-1.5 rounded-md bg-n4 px-3 py-2 text-[12.5px] text-t1 transition-colors hover:bg-n5"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n4 px-3 text-[12.5px] font-medium text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-[var(--border-strong)] hover:bg-n5"
                 >
                   <FolderOpen size={13} /> Browse
                 </button>
@@ -201,8 +203,8 @@ export function Onboarding({
                           className={clsx(
                             'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors',
                             sel
-                              ? 'border-[var(--border-strong)] bg-n4'
-                              : 'border-[var(--border-subtle)] hover:border-[var(--border-default)] hover:bg-n3'
+                              ? 'border-[rgba(245,165,36,0.4)] bg-accent-subtle shadow-[inset_0_1px_0_rgba(255,220,160,0.05)]'
+                              : 'border-[var(--border-subtle)] bg-n2 hover:border-[var(--border-default)] hover:bg-n4'
                           )}
                         >
                           <FolderOpen size={13} className="shrink-0 text-t3" />
@@ -212,13 +214,13 @@ export function Onboarding({
                               {p.path}
                             </span>
                           </span>
-                          {sel && <Check size={13} className="shrink-0 text-t2" />}
+                          {sel && <Check size={13} className="shrink-0 text-accent" />}
                         </button>
                       )
                     })}
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-[var(--border-default)] px-3 py-3 text-[12px] text-t4">
+                  <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-n1/40 px-3 py-4 text-center text-[12px] text-t3">
                     No workspaces detected yet — enter a path above.
                   </div>
                 )}
@@ -228,7 +230,7 @@ export function Onboarding({
 
           {step === 2 && (
             <section aria-label="Crew">
-              <h1 className="text-[20px] font-semibold tracking-tight text-t1">Your crew</h1>
+              <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-t1">Your crew</h1>
               <p className="mt-1 text-[13px] text-t3">
                 Name the agents you'll work with. You can edit them later.
               </p>
@@ -237,7 +239,7 @@ export function Onboarding({
                 {crew.map((c, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.35)]"
                       style={{ background: `hsl(${c.hue} 45% 42%)` }}
                     >
                       {(c.name.trim()[0] ?? '?').toUpperCase()}
@@ -247,7 +249,7 @@ export function Onboarding({
                       onChange={(e) => updateCrew(i, { name: e.target.value })}
                       placeholder="Agent name"
                       aria-label={`Agent ${i + 1} name`}
-                      className={clsx(inputCls, 'py-1.5 text-[12.5px]')}
+                      className={clsx(inputCls, 'h-8 py-0 text-[12.5px]')}
                     />
                     <div className="relative shrink-0">
                       <select
@@ -255,7 +257,7 @@ export function Onboarding({
                         onChange={(e) => updateCrew(i, { role: e.target.value as AgentRole })}
                         aria-label={`Agent ${i + 1} role`}
                         title="Role"
-                        className="appearance-none rounded-md border border-[var(--border-subtle)] bg-n3 py-1.5 pl-2.5 pr-7 text-[11.5px] text-t2 outline-none transition-colors focus:border-[var(--border-strong)]"
+                        className="h-8 appearance-none rounded-lg border border-[var(--border-default)] bg-n3 pr-7 pl-2.5 text-[11.5px] text-t2 outline-none transition-colors hover:border-[var(--border-strong)] hover:text-t1 focus:border-[rgba(245,165,36,0.45)]"
                       >
                         {ROLE_ORDER.map((r) => (
                           <option key={r} value={r}>
@@ -274,7 +276,7 @@ export function Onboarding({
                         onChange={(e) => updateCrew(i, { domain: e.target.value as AgentDomain })}
                         aria-label={`Agent ${i + 1} domain`}
                         title="Domain"
-                        className="appearance-none rounded-md border border-[var(--border-subtle)] bg-n3 py-1.5 pl-2.5 pr-7 text-[11.5px] text-t2 outline-none transition-colors focus:border-[var(--border-strong)]"
+                        className="h-8 appearance-none rounded-lg border border-[var(--border-default)] bg-n3 pr-7 pl-2.5 text-[11.5px] text-t2 outline-none transition-colors hover:border-[var(--border-strong)] hover:text-t1 focus:border-[rgba(245,165,36,0.45)]"
                       >
                         {DOMAIN_ORDER.map((d) => (
                           <option key={d} value={d}>
@@ -292,7 +294,7 @@ export function Onboarding({
                       onClick={() => setCrew(crew.filter((_, j) => j !== i))}
                       disabled={crew.length <= 1}
                       aria-label={`Remove ${c.name || `agent ${i + 1}`}`}
-                      className="shrink-0 rounded-md p-1.5 text-t4 transition-colors hover:bg-n4 hover:text-t2 disabled:cursor-not-allowed disabled:opacity-30"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-t4 transition-colors hover:bg-n4 hover:text-t1 disabled:cursor-not-allowed disabled:opacity-30"
                     >
                       <X size={12} />
                     </button>
@@ -302,7 +304,7 @@ export function Onboarding({
                   <button
                     type="button"
                     onClick={addCrew}
-                    className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] text-t3 transition-colors hover:bg-n3 hover:text-t2"
+                    className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-t3 transition-colors hover:bg-n4 hover:text-t1"
                   >
                     <Plus size={12} /> Add agent
                   </button>
@@ -311,11 +313,11 @@ export function Onboarding({
 
               <div className="mt-5">
                 <span className="micro-label mb-1.5 block">Agent CLIs</span>
-                <div className="rounded-lg border border-[var(--border-subtle)] bg-n2 px-3 py-1.5">
+                <div className="rounded-[10px] border border-[var(--border-default)] bg-n1/60 px-3 py-1">
                   {detectedClis.map((c) => (
                     <div
                       key={c.name}
-                      className="flex items-center gap-2.5 border-b border-[var(--border-subtle)] py-1.5 last:border-0"
+                      className="flex items-center gap-2.5 border-b border-[var(--border-subtle)] py-2 last:border-0"
                     >
                       {c.found ? (
                         <Check size={12} style={{ color: 'var(--color-done)' }} />
@@ -337,12 +339,12 @@ export function Onboarding({
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] px-7 py-4">
+        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-n1/40 px-8 py-3.5">
           <button
             type="button"
             onClick={() => setStep(step - 1)}
             disabled={step === 0}
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1 disabled:invisible"
+            className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1 disabled:invisible"
           >
             <ArrowLeft size={13} /> Back
           </button>
@@ -353,8 +355,8 @@ export function Onboarding({
                 key={label}
                 title={label}
                 className={clsx(
-                  'h-1.5 rounded-full transition-all',
-                  i === step ? 'w-4 bg-t2' : 'w-1.5 bg-n6'
+                  'h-1.5 rounded-full transition-all duration-300',
+                  i === step ? 'w-5 bg-accent' : i < step ? 'w-1.5 bg-t3' : 'w-1.5 bg-n6'
                 )}
               />
             ))}
@@ -363,7 +365,7 @@ export function Onboarding({
           <button
             type="button"
             onClick={() => (last ? finish() : setStep(step + 1))}
-            className="flex items-center gap-1.5 rounded-md bg-t1 px-3.5 py-1.5 text-[12.5px] font-medium text-n1 transition-colors hover:bg-white"
+            className="btn-accent-soft flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-medium"
           >
             {last ? 'Open the office' : 'Continue'} <ArrowRight size={13} />
           </button>

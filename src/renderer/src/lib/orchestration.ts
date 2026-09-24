@@ -49,11 +49,25 @@ export interface OrchNode extends PaneLeaf {
 export interface OrchNetwork {
   id: string
   name: string
+  /**
+   * What the network is for — a short category ("Senior loop") shown after
+   * the name: "Web 1: Senior loop". Set by the user (double-click the tab)
+   * or by the orchestrator itself (`tnet topic …` / net.topic).
+   */
+  topic?: string
   orchestrator: OrchNode
   agents: OrchNode[]
   /** CLI new subagents run when the caller doesn't pick one. */
   agentCommand?: string
   createdAt: number
+}
+
+/** How a network is laid out: free pan/zoom canvas, or a tiled workspace. */
+export type OrchLayout = 'canvas' | 'workspace'
+
+/** "Web 1: Senior loop" — the name, plus the topic when one is set. */
+export function networkLabel(net: Pick<OrchNetwork, 'name' | 'topic'>): string {
+  return net.topic ? `${net.name}: ${net.topic}` : net.name
 }
 
 /** Live state of a node's pty, derived from its output stream. */
@@ -193,6 +207,7 @@ interface Persisted {
   activeId: string | null
   networks: OrchNetwork[]
   lastOrchestratorCommand?: string
+  layout?: OrchLayout
 }
 
 function normNode(raw: unknown, role: OrchRole, keepLayout = true): OrchNode | null {
@@ -278,7 +293,7 @@ function normPos(v: unknown): OrchNode['pos'] {
 }
 
 function load(): Omit<Persisted, 'v'> {
-  const empty = { enabled: false, activeId: null, networks: [] }
+  const empty = { enabled: false, activeId: null, networks: [], layout: 'canvas' as OrchLayout }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return empty
@@ -298,6 +313,7 @@ function load(): Omit<Persisted, 'v'> {
       networks.push({
         id: r.id,
         name: typeof r.name === 'string' && r.name.trim() ? r.name : 'Network',
+        topic: typeof r.topic === 'string' && r.topic.trim() ? r.topic.trim() : undefined,
         orchestrator,
         agents,
         agentCommand: typeof r.agentCommand === 'string' ? r.agentCommand : undefined,
@@ -313,7 +329,8 @@ function load(): Omit<Persisted, 'v'> {
       activeId,
       networks,
       lastOrchestratorCommand:
-        typeof p.lastOrchestratorCommand === 'string' ? p.lastOrchestratorCommand : undefined
+        typeof p.lastOrchestratorCommand === 'string' ? p.lastOrchestratorCommand : undefined,
+      layout: p.layout === 'workspace' ? 'workspace' : 'canvas'
     }
   } catch {
     return empty
@@ -344,11 +361,16 @@ interface OrchState {
    * in with a fresh CLI).
    */
   restoring: boolean
+  /** Canvas (pan/zoom web) or Workspace (tiles around the orchestrator). */
+  layout: OrchLayout
 
   setEnabled(on: boolean): void
-  createNetwork(opts?: { name?: string; command?: string }): OrchNetwork
+  setLayout(layout: OrchLayout): void
+  createNetwork(opts?: { name?: string; command?: string; topic?: string }): OrchNetwork
   closeNetwork(id: string): void
   renameNetwork(id: string, name: string): void
+  /** Set (or clear, with '') what the network is for. */
+  setNetworkTopic(id: string, topic: string): void
   setActive(id: string): void
   setAgentCommand(netId: string, command: string | undefined): void
   spawnAgent(netId: string, opts?: SpawnAgentOpts): OrchNode | null
@@ -387,6 +409,7 @@ const initial = load()
 
 export const useOrch = create<OrchState>((set, get) => ({
   ...initial,
+  layout: initial.layout ?? 'canvas',
   expandedId: null,
   // set before any card can mount — restoreNodes clears it
   restoring: initial.networks.some((net) => networkNodes(net).some((n) => n.resume?.active)),
@@ -396,12 +419,17 @@ export const useOrch = create<OrchState>((set, get) => ({
     set({ enabled: on, expandedId: null })
   },
 
+  setLayout(layout) {
+    if (layout !== get().layout) set({ layout, expandedId: null })
+  },
+
   createNetwork(opts = {}) {
     const s = get()
     const command = opts.command ?? s.lastOrchestratorCommand
     const net: OrchNetwork = {
       id: newPaneId('web'),
       name: opts.name?.trim() || nextNetworkName(s.networks),
+      topic: opts.topic?.trim() || undefined,
       orchestrator: makeNode('orchestrator', { title: 'Orchestrator', command }),
       agents: [],
       createdAt: Date.now()
@@ -427,6 +455,11 @@ export const useOrch = create<OrchState>((set, get) => ({
     const v = name.trim()
     if (!v) return
     set({ networks: mapNetwork(get().networks, id, (n) => ({ ...n, name: v })) })
+  },
+
+  setNetworkTopic(id, topic) {
+    const v = topic.replace(/\s+/g, ' ').trim().slice(0, 48) || undefined
+    set({ networks: mapNetwork(get().networks, id, (n) => ({ ...n, topic: v })) })
   },
 
   setActive(id) {
@@ -546,7 +579,8 @@ useOrch.subscribe((s) => {
       enabled: s.enabled,
       activeId: s.activeId,
       networks: s.networks,
-      lastOrchestratorCommand: s.lastOrchestratorCommand
+      lastOrchestratorCommand: s.lastOrchestratorCommand,
+      layout: s.layout
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
   } catch {
@@ -558,12 +592,12 @@ useOrch.subscribe((s) => {
 /**
  * Every orchestration terminal as a plain terminal leaf (orchestrators
  * first, then their subagents) — so the office, board and sessions rail
- * treat network terminals like any other. Titles read "Web 1 · Orchestrator".
+ * treat network terminals like any other. Titles read "Web 1: Senior loop · Orchestrator".
  */
 export function orchestrationLeaves(): OrchNode[] {
   const out: OrchNode[] = []
   for (const net of useOrch.getState().networks) {
-    out.push({ ...net.orchestrator, title: `${net.name} · Orchestrator` })
+    out.push({ ...net.orchestrator, title: `${networkLabel(net)} · Orchestrator` })
     out.push(...net.agents)
   }
   return out
@@ -1261,20 +1295,26 @@ export function orchestratorPrimer(net: OrchNetwork): string {
   const n = net.agents.length
   if (hostInfo) {
     return (
-      `You are the ORCHESTRATOR of Terrarium agent network "${net.name}" (${n} subagent${n === 1 ? '' : 's'} attached). ` +
+      `You are the ORCHESTRATOR of Terrarium agent network "${networkLabel(net)}" (${n} subagent${n === 1 ? '' : 's'} attached). ` +
       'You can open and drive subagent terminals with the `tnet` CLI (already on PATH): ' +
       '`tnet spawn --cli claude --name Scout "task"` opens a subagent and hands it a task; ' +
       '`tnet ls` lists subagents with busy/idle status; `tnet ask <agent> "msg"` sends and waits for the reply; ' +
       '`tnet send`, `tnet read <agent>`, `tnet wait all`, `tnet kill <agent>` do the rest. ' +
       'Split parallelizable work across subagents, keep each task self-contained, then collect results with tnet read/ask and integrate them. ' +
+      (net.topic
+        ? ''
+        : 'As soon as you know the mission, label this network with a 2–4 word topic: `tnet topic "Senior loop"` (it shows as "' +
+          net.name +
+          ': <topic>" in the UI). ') +
       'Run `tnet help` first.'
     )
   }
   return (
-    `You are the ORCHESTRATOR of Terrarium agent network "${net.name}". ` +
+    `You are the ORCHESTRATOR of Terrarium agent network "${networkLabel(net)}". ` +
     'Drive subagent terminals by POSTing JSON to the URL in env TERRARIUM_WS_CMD, always including "sid": env TERRARIUM_SID. ' +
     'Commands: {"cmd":"net.spawn","task":"...","command":"claude"} · {"cmd":"net.info"} · ' +
     '{"cmd":"net.ask","agent":1,"data":"...","timeoutMs":110000} · {"cmd":"net.read","agent":1} · {"cmd":"net.kill","agent":1}. ' +
+    (net.topic ? '' : 'Label the network with a 2–4 word topic once you know the mission: {"cmd":"net.topic","topic":"..."}. ') +
     'Send {"cmd":"net.help"} first.'
   )
 }
@@ -1288,7 +1328,7 @@ const NET_HELP = {
   commands: [
     'net.info {sid|net} — your network, every node with status busy|idle|starting|exited',
     'net.list — all networks (tabs)',
-    'net.new {name?, command?, activate?} — open a new network tab',
+    'net.new {name?, topic?, command?, activate?} — open a new network tab',
     'net.spawn {command?, title?, cwd?, task?, count?} — new subagent(s); task = first prompt',
     'net.send {agent, data, enter?=true, raw?} — type into a subagent (agent = index | name | id | sid | "orchestrator")',
     'net.broadcast {data, enter?} — send to every subagent',
@@ -1299,6 +1339,7 @@ const NET_HELP = {
     'net.focus {agent} — pop a subagent open in the UI',
     'net.close {net} — close a whole network tab (every pty in it ends)',
     'net.rename {agent?, title} — rename a node (no agent → the network)',
+    'net.topic {topic} — label what your network is for (2–4 words; shows as "Web 1: <topic>"; "" clears)',
     'net.resume {agent, id, cli?, cwd?} — reopen a node in CLI session <id> (claude|devin; restarts its pty)'
   ]
 }
@@ -1317,6 +1358,7 @@ function resolveNet(msg: PaneCmdEnvelope): OrchNetwork | PaneCmdResult {
         ? nets[key - 1]
         : (nets.find((n) => n.id === key) ??
           nets.find((n) => n.name.toLowerCase() === String(key).toLowerCase()) ??
+          nets.find((n) => networkLabel(n).toLowerCase() === String(key).toLowerCase()) ??
           nets[Number(key) - 1])
     return hit ?? { ok: false, error: `unknown network ${JSON.stringify(key)}` }
   }
@@ -1386,6 +1428,8 @@ function netInfo(net: OrchNetwork) {
   return {
     id: net.id,
     name: net.name,
+    topic: net.topic ?? null,
+    label: networkLabel(net),
     active: useOrch.getState().activeId === net.id,
     agentCommand: net.agentCommand ?? net.orchestrator.command ?? DEFAULT_SHELL,
     orchestrator: nodeInfo(net, net.orchestrator),
@@ -1419,7 +1463,11 @@ export async function runNetCmd(msg: PaneCmdEnvelope): Promise<PaneCmdResult> {
     case 'net.new': {
       // a new tab, but the user's screen stays put — net.focus pops it up
       const prev = store.activeId
-      const net = store.createNetwork({ name: s(msg.name), command: s(msg.command) })
+      const net = store.createNetwork({
+        name: s(msg.name),
+        command: s(msg.command),
+        topic: s(msg.topic)
+      })
       if (store.enabled && msg.activate !== true && prev) useOrch.getState().setActive(prev)
       return { ok: true, result: netInfo(net) }
     }
@@ -1561,6 +1609,14 @@ export async function runNetCmd(msg: PaneCmdEnvelope): Promise<PaneCmdResult> {
       if (!isNode(node)) return node
       useOrch.getState().updateNode(node.id, { title })
       return { ok: true, result: { renamed: title } }
+    }
+
+    case 'net.topic': {
+      const raw = typeof msg.topic === 'string' ? msg.topic : typeof msg.title === 'string' ? msg.title : null
+      if (raw === null) return { ok: false, error: 'net.topic needs { topic } ("" clears it)' }
+      useOrch.getState().setNetworkTopic(net.id, raw)
+      const now = fresh(net)
+      return { ok: true, result: { network: now.name, topic: now.topic ?? null, label: networkLabel(now) } }
     }
 
     case 'net.resume': {

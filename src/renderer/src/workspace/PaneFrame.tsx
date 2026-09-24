@@ -51,11 +51,11 @@ function LiveCommand({ leaf }: { leaf: PaneLeaf }) {
   const live = useLiveCli(leaf)
   const detected = isShellCommand(leaf.command) ? live : null
   if (!detected) {
-    return leaf.command ? <span className="text-t4"> · {leaf.command}</span> : null
+    return leaf.command ? <span className="font-normal text-t4"> · {leaf.command}</span> : null
   }
   const b = cliBrand(detected.cli)
   return (
-    <span className="text-t4" title={`${b.label} running in ${leaf.command?.trim() || 'the shell'}`}>
+    <span className="font-normal text-t4" title={`${b.label} running in ${leaf.command?.trim() || 'the shell'}`}>
       {' · '}
       <span className="inline-flex translate-y-[2px] items-center">{b.mark(11)}</span>{' '}
       <span style={{ color: b.color }}>{b.label}</span>
@@ -64,7 +64,7 @@ function LiveCommand({ leaf }: { leaf: PaneLeaf }) {
 }
 
 const iconBtn =
-  'flex h-5 w-5 items-center justify-center rounded text-t4 transition-colors hover:bg-n5 hover:text-t2 disabled:pointer-events-none disabled:opacity-30'
+  'flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n5 hover:text-t1 disabled:pointer-events-none disabled:opacity-30'
 
 /**
  * Chrome around every leaf: header strip (kind icon + kind dot + title +
@@ -92,13 +92,13 @@ export function PaneFrame({
   return (
     <div
       className={clsx(
-        'group/frame flex h-full w-full flex-col overflow-hidden rounded-lg border bg-base transition-colors duration-150',
+        'group/frame flex h-full w-full flex-col overflow-hidden rounded-[10px] border bg-base transition-[border-color,box-shadow,opacity] duration-200',
         dragging && 'opacity-60',
         dropOver
-          ? 'border-[var(--color-info)]'
+          ? 'border-[var(--color-info)] shadow-[0_0_0_3px_rgba(71,168,255,0.15)]'
           : focused
-            ? 'border-[rgba(245,165,36,0.4)] shadow-[0_0_0_1px_rgba(245,165,36,0.12)]'
-            : 'border-[var(--border-subtle)] hover:border-[var(--border-default)]'
+            ? 'ring-focus border-transparent'
+            : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-[var(--border-strong)]'
       )}
       onPointerDown={onFocus}
       onDragOver={(e) => {
@@ -139,7 +139,7 @@ export function PaneFrame({
           setDragging(false)
           setDropOver(false)
         }}
-        className="flex h-7 shrink-0 items-center gap-1.5 border-b border-[var(--border-subtle)] bg-n2 pl-2.5 pr-1.5 select-none"
+        className="pane-head flex h-8 shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] pl-3 pr-1.5 select-none"
       >
         <Icon
           size={12}
@@ -154,14 +154,14 @@ export function PaneFrame({
         />
         <span
           className={clsx(
-            'truncate text-[12px] leading-none',
+            'truncate text-[12px] leading-none font-medium',
             focused ? 'text-t1' : 'text-t2'
           )}
         >
           {paneTitle(leaf)}
           {/* named worker: 'Korpus — marketing' + the bound CLI rides along */}
           {leaf.kind === 'terminal' && leaf.domain && (
-            <span className="text-t4"> — {DOMAIN_LABELS[leaf.domain]}</span>
+            <span className="font-normal text-t4"> — {DOMAIN_LABELS[leaf.domain]}</span>
           )}
           {leaf.kind === 'terminal' && <LiveCommand leaf={leaf} />}
         </span>

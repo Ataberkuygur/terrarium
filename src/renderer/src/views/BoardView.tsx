@@ -78,6 +78,22 @@ const SORT_KEY = 'terrarium.board.sort'
 /** Done reads as a log — show the recent slice, expand on demand. */
 const DONE_PREVIEW = 25
 
+// column header dots — status hues so each lane reads at a glance
+const COLUMN_DOT: Record<CardStatus, string> = {
+  backlog: 'var(--color-n9)',
+  ready: 'var(--color-info)',
+  doing: 'var(--color-working)',
+  review: 'var(--color-monitor)',
+  done: 'var(--color-done)'
+}
+const COLUMN_GLOW: Record<CardStatus, string> = {
+  backlog: 'transparent',
+  ready: 'rgba(71,168,255,0.45)',
+  doing: 'rgba(255,178,36,0.45)',
+  review: 'rgba(59,200,219,0.45)',
+  done: 'rgba(70,167,88,0.4)'
+}
+
 const SORT_LABEL: Record<SortMode, string> = {
   manual: 'Manual',
   priority: 'Priority',
@@ -772,8 +788,8 @@ export function BoardView() {
     <div className="relative flex h-full flex-col" onDragEnd={endDrag}>
       <div className="shrink-0 px-5 pt-4">
         {waiting.length > 0 && (
-          <div className="mb-3 rounded-xl border border-[rgba(242,85,90,0.3)] bg-[rgba(229,72,77,0.07)] p-3">
-            <div className="micro-label mb-1.5" style={{ color: 'var(--color-needs)' }}>
+          <div className="mb-3 rounded-xl border border-[rgba(242,85,90,0.26)] bg-[linear-gradient(180deg,rgba(229,72,77,0.09),rgba(229,72,77,0.04))] px-3.5 py-2.5 shadow-[var(--shadow-card)]">
+            <div className="micro-label mb-1" style={{ color: 'var(--color-needs)' }}>
               Waiting on you · {waiting.length}
             </div>
             {waiting.map((r) => {
@@ -782,7 +798,7 @@ export function BoardView() {
               const name = w?.name ?? agent?.name
               const card = cards.find((c) => c.id === r.cardId)
               return (
-                <div key={r.id} className="flex items-center gap-3 py-1">
+                <div key={r.id} className="flex items-center gap-2.5 py-1">
                   <span className="status-pulse h-2 w-2 shrink-0 rounded-full" style={{ background: 'var(--color-needs)' }} />
                   <p className="flex-1 truncate text-[12.5px] text-t2">
                     <span className="font-medium text-t1">{name}</span> — {r.summary || card?.title}
@@ -810,8 +826,10 @@ export function BoardView() {
         )}
 
         {/* capture */}
-        <div className="flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-n2 px-3.5 py-2 transition-colors focus-within:border-[var(--border-strong)]">
-          <Plus size={14} className="shrink-0 text-t3" />
+        <div className="group/cap flex h-11 items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-n2 bg-[image:var(--grad-chrome)] pr-2 pl-2.5 shadow-[var(--shadow-card)] transition-[border-color,box-shadow] duration-150 focus-within:border-[rgba(245,165,36,0.4)] focus-within:shadow-[0_0_0_3px_rgba(245,165,36,0.08),var(--shadow-card)]">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-n4 text-t3 transition-colors group-focus-within/cap:bg-accent-subtle group-focus-within/cap:text-accent">
+            <Plus size={13} strokeWidth={2} />
+          </span>
           <input
             ref={inputRef}
             value={draft}
@@ -825,32 +843,32 @@ export function BoardView() {
               }
             }}
             placeholder="New task…   !2 urgent · @me · ^tomorrow · #ready — paste a list for many"
-            className="min-w-0 flex-1 bg-transparent text-[13.5px] text-t1 outline-none placeholder:text-t4"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-t1 outline-none placeholder:text-t4"
           />
           {preview && (preview.priority || preview.assignMe || preview.dueAt || preview.status) && (
             <span className="flex shrink-0 items-center gap-1">
               {preview.priority ? (
-                <span className={clsx('rounded px-1 text-[10px]', preview.priority === 2 ? 'bg-[rgba(229,72,77,0.14)] text-[var(--color-needs)]' : 'bg-accent-subtle text-accent')}>
+                <span className={clsx('rounded-md px-1.5 py-px text-[10px] font-medium', preview.priority === 2 ? 'bg-[rgba(229,72,77,0.14)] text-[var(--color-needs)]' : 'bg-accent-subtle text-accent')}>
                   P{preview.priority}
                 </span>
               ) : null}
-              {preview.assignMe && <span className="rounded bg-n4 px-1 text-[10px] text-t2">@me</span>}
+              {preview.assignMe && <span className="rounded-md bg-n4 px-1.5 py-px text-[10px] font-medium text-t2">@me</span>}
               {preview.dueAt && (
-                <span className="flex items-center gap-0.5 rounded bg-n4 px-1 text-[10px] text-t2">
+                <span className="flex items-center gap-1 rounded-md bg-n4 px-1.5 py-px text-[10px] font-medium text-t2">
                   <Calendar size={9} />
                   {new Date(preview.dueAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                 </span>
               )}
-              {preview.status && <span className="rounded bg-n4 px-1 text-[10px] text-t2">{STATUS_LABEL[preview.status]}</span>}
+              {preview.status && <span className="rounded-md bg-n4 px-1.5 py-px text-[10px] font-medium text-t2">{STATUS_LABEL[preview.status]}</span>}
             </span>
           )}
           <Kbd>↵</Kbd>
         </div>
 
         {/* filter bar */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <div className="flex h-7 w-56 items-center gap-1.5 rounded-md border border-[var(--border-subtle)] bg-n1 px-2 focus-within:border-[var(--border-strong)]">
-            <Search size={11} className="shrink-0 text-t4" />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="flex h-7 w-56 items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-n1/70 pr-1 pl-2.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] transition-colors focus-within:border-[var(--border-strong)]">
+            <Search size={12} strokeWidth={2} className="shrink-0 text-t4" />
             <input
               ref={searchRef}
               value={filters.text}
@@ -863,9 +881,9 @@ export function BoardView() {
                 if (e.key === 'Enter') e.currentTarget.blur()
               }}
               placeholder="Search tasks"
-              className="min-w-0 flex-1 bg-transparent text-[11.5px] text-t1 outline-none placeholder:text-t4"
+              className="min-w-0 flex-1 bg-transparent text-[12px] text-t1 outline-none placeholder:text-t4"
             />
-            <Kbd>/</Kbd>
+            <Kbd className="!text-[10px]">/</Kbd>
           </div>
           <Chips
             icon={<User size={10} />}
@@ -903,23 +921,23 @@ export function BoardView() {
           {anyFilter && (
             <button
               onClick={() => setFilters(EMPTY_FILTERS)}
-              className="flex h-7 items-center gap-1 rounded-md px-2 text-[11px] text-t3 transition-colors hover:bg-n3 hover:text-t1"
+              className="flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
             >
-              <X size={10} /> Clear
+              <X size={11} /> Clear
             </button>
           )}
           <span className="flex-1" />
-          <span className="text-[11px] text-t4">
+          <span className="tnum text-[11.5px] text-t3">
             {counts.open} open
             {counts.today > 0 && <span className="text-accent"> · {counts.today} today</span>}
             {counts.overdue > 0 && <span className="text-[var(--color-needs)]"> · {counts.overdue} overdue</span>}
           </span>
-          <label className="flex h-7 items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-n1 px-1.5 text-[11px] text-t3">
-            <ArrowUpDown size={10} className="shrink-0" />
+          <label className="tool-group h-7 !gap-1.5 !px-2 text-t4 transition-colors hover:text-t3">
+            <ArrowUpDown size={11} className="shrink-0" />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortMode)}
-              className="bg-transparent text-[11px] text-t2 outline-none [color-scheme:dark]"
+              className="cursor-pointer bg-transparent text-[11.5px] text-t2 outline-none [color-scheme:dark]"
               title="Sort within columns — dragging switches to Manual"
             >
               {(Object.keys(SORT_LABEL) as SortMode[]).map((s) => (
@@ -932,9 +950,9 @@ export function BoardView() {
           <button
             onClick={() => setHelpOpen(true)}
             title="Keyboard shortcuts (?)"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n3 hover:text-t1"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
-            <Keyboard size={13} />
+            <Keyboard size={14} strokeWidth={1.8} />
           </button>
         </div>
 
@@ -946,7 +964,7 @@ export function BoardView() {
       {/* horizontal kanban */}
       <div
         ref={listRef}
-        className="flex min-h-0 flex-1 gap-3 overflow-x-auto px-5 pb-5"
+        className="flex min-h-0 flex-1 gap-3 overflow-x-auto px-5 pt-1 pb-5"
         onClick={(e) => {
           // clicking empty board space clears the selection
           if (e.target === e.currentTarget) {
@@ -965,43 +983,50 @@ export function BoardView() {
               key={g.status}
               {...dropProps(g.status)}
               className={clsx(
-                'flex shrink-0 flex-col rounded-xl border transition-colors',
+                'flex shrink-0 flex-col rounded-xl border transition-[border-color,background-color,box-shadow] duration-150',
                 isCollapsed ? 'w-[168px]' : 'w-[284px]',
-                isTarget ? 'border-[rgba(245,165,36,0.5)] bg-[color-mix(in_srgb,var(--color-accent)_4%,var(--color-n1))]' : 'border-[var(--border-subtle)] bg-n1'
+                isTarget
+                  ? 'border-[rgba(245,165,36,0.45)] bg-[color-mix(in_srgb,var(--color-accent)_4%,var(--color-n1))] shadow-[0_0_0_3px_rgba(245,165,36,0.06)]'
+                  : 'border-[var(--border-subtle)] bg-n1/80'
               )}
             >
-              <header className="group/col flex items-center gap-1.5 px-3 py-2">
+              <header className="group/col flex h-10 shrink-0 items-center gap-1 pr-2 pl-1.5">
                 <button
                   onClick={() => toggleCollapsed(g.status)}
                   aria-expanded={!isCollapsed}
                   title={isCollapsed ? 'Expand column' : 'Collapse column'}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                  className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left"
                 >
                   <ChevronRight
                     size={11}
                     className={clsx('shrink-0 text-t4 transition-transform duration-150', !isCollapsed && 'rotate-90')}
                   />
-                  <h2 className="micro-label">{g.label}</h2>
-                  <span className="tnum text-[11px] text-t4">
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: COLUMN_DOT[g.status], boxShadow: `0 0 6px ${COLUMN_GLOW[g.status]}` }}
+                  />
+                  <h2 className="m-0 truncate text-[12px] font-semibold tracking-[-0.005em] text-t1">{g.label}</h2>
+                  <span className="tnum rounded-full bg-n3 px-1.5 text-[10px] leading-4 font-medium text-t3">
                     {filtered ? `${g.visible.length}/${g.all.length}` : g.all.length}
                   </span>
                 </button>
-                <span className="hidden text-[10px] text-t4 opacity-0 transition-opacity group-hover/col:inline group-hover/col:opacity-100">
+                <span className="kbd hidden !px-1 !py-0.5 !text-[9.5px] opacity-0 transition-opacity group-hover/col:inline group-hover/col:opacity-100">
                   {g.key}
                 </span>
                 {!isCollapsed && (
                   <button
                     onClick={() => setColumnAdd(adding ? null : g.status)}
                     title={`Add to ${g.label}`}
-                    className="rounded p-0.5 text-t4 transition-colors hover:bg-n4 hover:text-t1"
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-t1"
                   >
-                    <Plus size={12} />
+                    <Plus size={13} />
                   </button>
                 )}
               </header>
 
               {!isCollapsed && (
-                <div data-col-list className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 pb-2">
+                <div data-col-list className="scroll-thin flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 pb-2">
                   {adding && (
                     <ColumnAdd
                       label={g.label}
@@ -1038,10 +1063,10 @@ export function BoardView() {
                     <button
                       onClick={() => setColumnAdd(g.status)}
                       className={clsx(
-                        'rounded-lg border border-dashed px-2 py-5 text-center text-[10.5px] transition-colors',
+                        'rounded-[10px] border border-dashed px-2 py-6 text-center text-[11px] transition-colors',
                         isTarget
-                          ? 'border-[rgba(245,165,36,0.5)] text-accent'
-                          : 'border-[var(--border-subtle)] text-t4 hover:border-[var(--border-default)] hover:text-t3'
+                          ? 'border-[rgba(245,165,36,0.5)] bg-accent-subtle text-accent'
+                          : 'border-[var(--border-default)] text-t4 hover:border-[var(--border-strong)] hover:bg-n2 hover:text-t3'
                       )}
                     >
                       {isTarget ? 'Drop here' : filtered ? 'No matches' : g.status === 'backlog' ? 'Capture above, or click to add' : 'Empty — drop or add'}
@@ -1050,7 +1075,7 @@ export function BoardView() {
                   {g.hidden > 0 && (
                     <button
                       onClick={() => setShowAllDone(true)}
-                      className="rounded-md py-1.5 text-[11px] text-t4 transition-colors hover:bg-n3 hover:text-t2"
+                      className="rounded-lg py-1.5 text-[11px] font-medium text-t4 transition-colors hover:bg-n4 hover:text-t2"
                     >
                       Show {g.hidden} older
                     </button>
@@ -1058,7 +1083,7 @@ export function BoardView() {
                   {g.status === 'done' && showAllDone && g.visible.length > DONE_PREVIEW && !anyFilter && (
                     <button
                       onClick={() => setShowAllDone(false)}
-                      className="rounded-md py-1.5 text-[11px] text-t4 transition-colors hover:bg-n3 hover:text-t2"
+                      className="rounded-lg py-1.5 text-[11px] font-medium text-t4 transition-colors hover:bg-n4 hover:text-t2"
                     >
                       Show fewer
                     </button>
@@ -1072,35 +1097,40 @@ export function BoardView() {
 
       {/* bulk actions */}
       {selCount > 1 && (
-        <div className="absolute bottom-16 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-default)] bg-popover px-2 py-1.5 shadow-lg-dark">
-          <span className="px-1.5 text-[12px] font-medium text-t1">{selCount} selected</span>
-          <span className="mx-1 h-4 w-px bg-n6" />
+        <div className="pop-surface absolute bottom-16 left-1/2 z-30 flex h-11 -translate-x-1/2 items-center gap-0.5 rounded-xl px-1.5">
+          <span className="flex items-center gap-1.5 px-2 text-[12px] font-medium text-t1">
+            <span className="tnum flex h-5 min-w-5 items-center justify-center rounded-md bg-accent-subtle px-1 text-[11px] font-semibold text-accent">
+              {selCount}
+            </span>
+            selected
+          </span>
+          <span className="mx-1 h-4 w-px bg-[var(--border-default)]" />
           {COLUMNS.map((c) => (
             <button
               key={c.status}
               onClick={() => void moveCards(selCards, c.status)}
               title={`Move to ${c.label} (${c.key})`}
-              className="rounded-md px-1.5 py-1 text-[11px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
+              className="h-7 rounded-lg px-2 text-[11.5px] text-t3 transition-colors hover:bg-n4 hover:text-t1"
             >
               {c.label}
             </button>
           ))}
-          <span className="mx-1 h-4 w-px bg-n6" />
-          <button onClick={() => void assignToMe(selCards)} title="Assign to me (m)" className="rounded-md p-1.5 text-t3 hover:bg-n4 hover:text-t1">
-            <User size={12} />
+          <span className="mx-1 h-4 w-px bg-[var(--border-default)]" />
+          <button onClick={() => void assignToMe(selCards)} title="Assign to me (m)" className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1">
+            <User size={13} />
           </button>
-          <button onClick={() => void setPriority(selCards)} title="Cycle priority (p)" className="rounded-md p-1.5 text-t3 hover:bg-n4 hover:text-t1">
-            <Flag size={12} />
+          <button onClick={() => void setPriority(selCards)} title="Cycle priority (p)" className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1">
+            <Flag size={13} />
           </button>
           <button
             onClick={() => void deleteCards(selCards)}
             title="Delete (Del) — undoable"
-            className="rounded-md p-1.5 text-t3 hover:bg-[rgba(229,72,77,0.12)] hover:text-[var(--color-needs)]"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-[rgba(229,72,77,0.12)] hover:text-[var(--color-needs)]"
           >
-            <Trash2 size={12} />
+            <Trash2 size={13} />
           </button>
-          <button onClick={() => setSelected(new Set())} title="Clear selection (Esc)" className="rounded-md p-1.5 text-t4 hover:bg-n4 hover:text-t1">
-            <X size={12} />
+          <button onClick={() => setSelected(new Set())} title="Clear selection (Esc)" className="flex h-7 w-7 items-center justify-center rounded-lg text-t4 transition-colors hover:bg-n4 hover:text-t1">
+            <X size={13} />
           </button>
         </div>
       )}
@@ -1141,15 +1171,17 @@ function Chips<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex h-7 items-center gap-0.5 rounded-md border border-[var(--border-subtle)] bg-n1 px-1">
-      <span className="px-0.5 text-t4">{icon}</span>
+    <div className="seg-track h-7 gap-0.5">
+      <span className="flex items-center px-1.5 text-t4">{icon}</span>
       {options.map(([v, label]) => (
         <button
           key={v}
           onClick={() => onChange(v)}
           className={clsx(
-            'rounded px-1.5 py-0.5 text-[11px] transition-colors',
-            value === v ? 'bg-n4 text-t1' : 'text-t4 hover:text-t2'
+            'h-[22px] rounded-[7px] px-2 text-[11.5px] transition-colors duration-150',
+            value === v
+              ? 'bg-gradient-to-b from-n5 to-n4 font-medium text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.04)]'
+              : 'text-t3 hover:text-t2'
           )}
         >
           {label}
@@ -1172,7 +1204,7 @@ function ColumnAdd({
 }) {
   const [v, setV] = useState('')
   return (
-    <div className="rounded-lg border border-[var(--border-strong)] bg-base px-2.5 py-1.5">
+    <div className="rounded-[10px] border border-[rgba(245,165,36,0.4)] bg-raised px-2.5 py-2 shadow-[0_0_0_3px_rgba(245,165,36,0.07),var(--shadow-card)]">
       <input
         autoFocus
         value={v}
@@ -1216,28 +1248,39 @@ const SHORTCUTS: [string, string][] = [
 
 function ShortcutHelp({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,5,7,0.62)] backdrop-blur-[3px]"
+      onClick={onClose}
+    >
       <div
-        className="w-[440px] rounded-xl border border-[var(--border-default)] bg-popover p-4 shadow-lg-dark"
+        className="pop-in w-[460px] overflow-hidden rounded-2xl border border-[var(--border-default)] bg-popover p-5 shadow-[var(--shadow-pop),0_32px_80px_-24px_rgba(0,0,0,0.7)] [transform-origin:center]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="m-0 flex items-center gap-1.5 text-[13px] font-semibold text-t1">
-            <Keyboard size={13} className="text-t3" /> Board shortcuts
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="m-0 flex items-center gap-2 text-[13.5px] font-semibold tracking-[-0.01em] text-t1">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-n4 text-t2">
+              <Keyboard size={13} />
+            </span>
+            Board shortcuts
           </h3>
-          <button onClick={onClose} className="rounded-md p-1 text-t4 hover:bg-n4 hover:text-t2">
-            <X size={13} />
+          <button
+            onClick={onClose}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
+          >
+            <X size={14} strokeWidth={1.8} />
           </button>
         </div>
-        <div className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-1.5">
+        <div className="grid grid-cols-[140px_1fr] items-center gap-x-3 gap-y-2">
           {SHORTCUTS.map(([k, d]) => (
             <div key={k} className="contents">
-              <span className="font-mono text-[11px] text-t2">{k}</span>
-              <span className="text-[11.5px] text-t3">{d}</span>
+              <span className="justify-self-start rounded-md border border-[var(--border-subtle)] bg-n3 px-1.5 py-0.5 font-mono text-[10.5px] text-t2">
+                {k}
+              </span>
+              <span className="text-[12px] text-t2">{d}</span>
             </div>
           ))}
         </div>
-        <div className="mt-3 border-t border-[var(--border-subtle)] pt-3">
+        <div className="mt-4 border-t border-[var(--border-subtle)] pt-3.5">
           <div className="micro-label mb-1.5">Capture syntax</div>
           <p className="text-[11.5px] leading-relaxed text-t3">
             <code className="text-t2">!1</code> / <code className="text-t2">!2</code> priority ·{' '}
@@ -1246,8 +1289,8 @@ function ShortcutHelp({ onClose }: { onClose: () => void }) {
             <code className="text-t2">#ready</code> column. Paste a list → one task per line.
           </p>
         </div>
-        <div className="mt-2 flex items-center gap-1 text-[10.5px] text-t4">
-          <Filter size={10} /> Filters narrow every column; counts show visible/total.
+        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-t4">
+          <Filter size={11} /> Filters narrow every column; counts show visible/total.
         </div>
       </div>
     </div>

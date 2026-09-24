@@ -19,13 +19,13 @@ export interface EmptyStateProps {
 export function EmptyState({ icon: Icon, title, hint, action, className }: EmptyStateProps) {
   return (
     <div className={cx('flex h-full w-full items-center justify-center', className)}>
-      <div className="flex max-w-[240px] flex-col items-center gap-2 text-center">
-        <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-n3 text-t3">
+      <div className="flex max-w-[260px] flex-col items-center gap-2 text-center">
+        <div className="mb-1.5 flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-default)] bg-gradient-to-b from-n4 to-n3 text-t3 shadow-[var(--shadow-card)]">
           <Icon size={17} strokeWidth={1.6} />
         </div>
-        <p className="text-[13px] font-medium text-t2">{title}</p>
+        <p className="text-[13px] font-medium tracking-[-0.005em] text-t1">{title}</p>
         {hint != null && hint !== '' && (
-          <p className="text-[12px] leading-relaxed text-t4">{hint}</p>
+          <p className="text-[12px] leading-relaxed text-t3">{hint}</p>
         )}
         {action != null && <div className="mt-2">{action}</div>}
       </div>

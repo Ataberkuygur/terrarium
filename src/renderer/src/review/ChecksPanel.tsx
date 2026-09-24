@@ -82,7 +82,7 @@ export function ChecksPanel({ checks }: ChecksPanelProps) {
         {checks.map((c, i) => {
           const meta = STATUS_META[c.status]
           return (
-            <div key={i} className="flex items-center gap-2.5 px-4 py-2">
+            <div key={i} className="flex h-9 items-center gap-2.5 px-5">
               <span className="flex shrink-0 items-center" style={{ color: meta.tint }}>
                 {meta.icon}
               </span>
@@ -104,14 +104,14 @@ export function ChecksPanel({ checks }: ChecksPanelProps) {
           )
         })}
         {checks.length === 0 && (
-          <p className="px-4 py-3 text-[12px] text-t4">No checks reported for this run.</p>
+          <p className="px-5 py-3 text-[12px] text-t3">No checks reported for this run.</p>
         )}
       </div>
 
       {/* aggregated verdict */}
-      <div className="px-3 pb-3 pt-1">
+      <div className="px-4 pt-1 pb-3">
         <div
-          className="flex items-center gap-2 rounded-lg border px-3 py-2 text-[12px] font-medium"
+          className="flex h-9 items-center gap-2 rounded-[10px] border px-3 text-[12px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
           style={{ borderColor: verdict.border, background: verdict.bg, color: verdict.color }}
         >
           {verdict.icon}

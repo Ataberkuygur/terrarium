@@ -133,7 +133,7 @@ export function ClipPeek() {
         <motion.aside
           key={clip.at}
           aria-label="Clipboard image"
-          className="fixed top-14 right-3 z-40 w-[300px] select-none overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-lg-dark backdrop-blur-xl"
+          className="fixed top-14 right-3 z-40 w-[300px] select-none overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/95 shadow-[var(--shadow-pop)] backdrop-blur-xl"
           initial={{ x: '115%', opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '115%', opacity: 0 }}
@@ -148,10 +148,12 @@ export function ClipPeek() {
           }}
         >
           {/* header — kind + dims + dismiss */}
-          <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2">
-            <ImageIcon size={13} className="text-t3" />
-            <span className="micro-label">Clipboard image</span>
-            <span className="tnum ml-auto text-[11px] text-t4">
+          <div className="pane-head flex h-10 items-center gap-2 border-b border-[var(--border-subtle)] pr-1.5 pl-3">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-accent-subtle text-accent">
+              <ImageIcon size={11} strokeWidth={2} />
+            </span>
+            <span className="text-[12px] font-medium text-t1">Clipboard image</span>
+            <span className="tnum ml-auto rounded-full bg-n3 px-1.5 text-[10px] leading-4 font-medium text-t3">
               {clip.width}×{clip.height}
             </span>
             <Button
@@ -171,14 +173,14 @@ export function ClipPeek() {
               alt={`Clipboard capture ${clip.width}×${clip.height}`}
               title={clip.path}
               draggable={false}
-              className="h-auto max-h-[280px] w-full rounded-md bg-n3 object-contain"
+              className="h-auto max-h-[280px] w-full rounded-lg border border-[var(--border-subtle)] bg-sunken object-contain"
             />
           </div>
 
           {/* actions / attach picker — picking swaps the grid for a card list */}
           {picking ? (
             <div className="border-t border-[var(--border-subtle)] px-2.5 py-2">
-              <div className="mb-1 flex items-center gap-2">
+              <div className="mb-1 flex items-center gap-2 pl-1">
                 <span className="micro-label">Attach to card</span>
                 <Button
                   variant="ghost"
@@ -195,7 +197,7 @@ export function ClipPeek() {
                   No open cards — create one on the board.
                 </p>
               ) : (
-                <div className="max-h-[180px] overflow-y-auto">
+                <div className="scroll-thin max-h-[180px] overflow-y-auto">
                   {openCards.map((c) => {
                     const who = agentName(c.assigneeId)
                     return (
@@ -204,7 +206,7 @@ export function ClipPeek() {
                         type="button"
                         onClick={() => attach(c)}
                         title={c.title}
-                        className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-[12px] text-t2 transition-colors hover:bg-n3 hover:text-t1"
+                        className="flex h-7 w-full items-center gap-2 rounded-lg px-2 text-left text-[12px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
                       >
                         <span className="min-w-0 flex-1 truncate">{c.title}</span>
                         <span className="shrink-0 text-[10.5px] text-t4">

@@ -122,16 +122,19 @@ function AddDepartmentDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[6px]"
+      onClick={onClose}
+    >
       <div
-        className="w-[340px] rounded-xl border border-[var(--border-default)] bg-popover p-4 shadow-lg-dark"
+        className="pop-in w-[348px] rounded-2xl border border-[var(--border-default)] bg-popover p-5 shadow-[var(--shadow-pop)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="m-0 text-[13px] font-semibold text-t1">New department</h3>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="m-0 text-[13.5px] font-semibold tracking-[-0.01em] text-t1">New department</h3>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-t4 transition-colors hover:bg-n4 hover:text-t2"
+            className="-mr-1.5 flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
             <X size={13} />
           </button>
@@ -144,21 +147,21 @@ function AddDepartmentDialog({ onClose }: { onClose: () => void }) {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && create()}
           placeholder="e.g. Research, Design Ops…"
-          className="mb-3 w-full rounded-md border border-[var(--border-default)] bg-n2 px-2.5 py-1.5 text-[12.5px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]"
+          className="mb-4 h-8 w-full rounded-lg border border-[var(--border-default)] bg-n1/70 px-2.5 text-[12.5px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 focus:border-[rgba(245,165,36,0.5)]"
         />
 
         <div className="micro-label mb-1.5">Collects domains</div>
-        <div className="mb-3 flex flex-wrap gap-1.5">
+        <div className="mb-4 flex flex-wrap gap-1.5">
           {DEPARTMENT_DOMAINS.map((d) => {
             const on = domains.includes(d)
             return (
               <button
                 key={d}
                 onClick={() => toggleDomain(d)}
-                className={`rounded-md border px-2 py-1 text-[11px] capitalize transition-colors cursor-pointer ${
+                className={`h-6 cursor-pointer rounded-full border px-2.5 text-[11px] font-medium capitalize transition-colors ${
                   on
-                    ? 'border-accent bg-accent-subtle text-accent'
-                    : 'border-[var(--border-default)] text-t3 hover:border-[var(--border-strong)] hover:text-t2'
+                    ? 'border-[rgba(245,165,36,0.4)] bg-accent-subtle text-accent'
+                    : 'border-[var(--border-default)] text-t3 hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1'
                 }`}
               >
                 {d}
@@ -168,12 +171,12 @@ function AddDepartmentDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="micro-label mb-1.5">Floor color</div>
-        <div className="mb-4 flex items-center gap-1.5">
+        <div className="mb-5 flex items-center gap-2">
           <button
             onClick={() => setHue(null)}
             title="Auto — picks the next free hue"
-            className={`flex h-5 w-5 items-center justify-center rounded-full border border-[var(--border-default)] bg-n3 text-t3 transition-transform cursor-pointer ${
-              hue === null ? 'scale-110 ring-2 ring-white/80' : 'hover:scale-110'
+            className={`flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border border-[var(--border-default)] bg-n3 text-t3 transition-transform ${
+              hue === null ? 'scale-110 ring-2 ring-white/70 ring-offset-2 ring-offset-popover' : 'hover:scale-110'
             }`}
           >
             <Sparkles size={10} />
@@ -183,8 +186,8 @@ function AddDepartmentDialog({ onClose }: { onClose: () => void }) {
               key={h}
               onClick={() => setHue(h)}
               title={`Hue ${h}`}
-              className={`h-5 w-5 rounded-full transition-transform cursor-pointer ${
-                hue === h ? 'scale-110 ring-2 ring-white/80' : 'hover:scale-110'
+              className={`h-5 w-5 cursor-pointer rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform ${
+                hue === h ? 'scale-110 ring-2 ring-white/70 ring-offset-2 ring-offset-popover' : 'hover:scale-110'
               }`}
               style={{ background: `hsl(${h} 60% 55%)` }}
             />
@@ -199,7 +202,7 @@ function AddDepartmentDialog({ onClose }: { onClose: () => void }) {
               {customs.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-n2 px-2 py-1"
+                  className="flex h-8 items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-n2 pr-1 pl-2.5"
                 >
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -209,7 +212,7 @@ function AddDepartmentDialog({ onClose }: { onClose: () => void }) {
                   <button
                     onClick={() => removeDepartment(d.id)}
                     title={`Delete ${d.name}`}
-                    className="rounded p-0.5 text-t4 transition-colors hover:bg-n3 hover:text-error cursor-pointer"
+                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-error"
                   >
                     <X size={11} />
                   </button>
@@ -345,7 +348,7 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
   }, [])
 
   return (
-    <div className="relative h-full select-none overflow-hidden bg-neutral-950">
+    <div className="relative h-full select-none overflow-hidden bg-canvas">
       {/* scene layer — mini keeps the legacy single-scene render */}
       {mini ? (
         theme === 'avengers' ? (
@@ -381,7 +384,7 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
           {splitDepts.map((d) => (
             <div
               key={d.id}
-              className="relative overflow-hidden rounded-lg border border-[var(--border-subtle)]"
+              className="relative overflow-hidden rounded-[10px] border border-[var(--border-default)] shadow-[var(--shadow-card)]"
             >
               <DeptInterior
                 compact
@@ -396,7 +399,7 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
               <button
                 onClick={() => enterDept(d.id)}
                 title={`Open ${d.name}`}
-                className="absolute top-2 right-2 z-20 rounded-md border border-white/15 bg-neutral-900/80 p-1.5 text-neutral-300 backdrop-blur-md transition-colors hover:bg-neutral-800 hover:text-white cursor-pointer"
+                className="absolute top-2 right-2 z-20 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-default)] bg-n2/85 text-t2 shadow-[var(--shadow-card)] backdrop-blur-md transition-colors hover:bg-n4 hover:text-t1"
               >
                 <Maximize2 size={12} />
               </button>
@@ -426,36 +429,33 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
       {/* Minimal Top-Right Terminal Control HUD — sits clear of the
           department header overlay that lives top-left */}
       <div className="absolute top-3 right-3 z-30 flex flex-col items-end gap-1.5">
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-neutral-900/85 px-3 py-1.5 backdrop-blur-xl shadow-lg">
-          <div className="flex items-center gap-2 text-[12px] font-medium text-white/90">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        <div className="flex h-11 items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[rgba(16,17,20,0.84)] bg-[image:var(--grad-chrome)] pr-1.5 pl-3 shadow-[var(--shadow-pop)] backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-[12px] font-medium text-t1">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="status-pulse absolute inline-flex h-full w-full rounded-full bg-done opacity-60 blur-[2px]" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-done shadow-[0_0_6px_rgba(70,167,88,0.7)]" />
             </span>
-            <span className="font-semibold tracking-wide">
+            <span className="tnum font-medium tracking-[-0.005em]">
               {terminalAgents.length} {terminalAgents.length === 1 ? 'Terminal Agent' : 'Terminal Agents'}
             </span>
           </div>
 
-          <span className="h-3 w-px bg-white/15 mx-0.5" />
+          <span className="mx-0.5 h-4 w-px bg-[var(--border-default)]" />
 
           {/* View-mode segmented control — hidden in the mini player, which
               always renders the single legacy scene */}
           {!mini && (
             <>
-              <div
-                className="flex items-center gap-0.5 rounded-lg bg-white/5 p-0.5"
-                title="Office view"
-              >
+              <div className="seg-track gap-0.5" title="Office view">
                 <button
                   onClick={() => setView('city')}
-                  className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer ${
+                  className={`flex h-6 cursor-pointer items-center gap-1 rounded-[7px] px-2 text-[11.5px] font-medium transition-colors ${
                     view === 'city'
-                      ? 'bg-white/15 text-white shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                      : 'text-t3 hover:text-t2'
                   }`}
                 >
-                  <Building size={11} />
+                  <Building size={11} className={view === 'city' ? 'text-accent' : undefined} />
                   City
                 </button>
                 {([4, 6, 8] as const).map((n) => (
@@ -465,10 +465,10 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
                       setSplitCount(n)
                       setView('split')
                     }}
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer ${
+                    className={`tnum flex h-6 min-w-[24px] cursor-pointer items-center justify-center rounded-[7px] px-2 text-[11.5px] font-medium transition-colors ${
                       view === 'split' && splitCount === n
-                        ? 'bg-white/15 text-white shadow-sm'
-                        : 'text-neutral-400 hover:text-neutral-200'
+                        ? 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                        : 'text-t3 hover:text-t2'
                     }`}
                   >
                     {n}
@@ -480,13 +480,13 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
                     setView('split')
                   }}
                   title="All departments"
-                  className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer ${
+                  className={`flex h-6 cursor-pointer items-center gap-1 rounded-[7px] px-2 text-[11.5px] font-medium transition-colors ${
                     view === 'split' && splitCount === 'all'
-                      ? 'bg-white/15 text-white shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                      : 'text-t3 hover:text-t2'
                   }`}
                 >
-                  <LayoutGrid size={11} />
+                  <LayoutGrid size={11} className={view === 'split' && splitCount === 'all' ? 'text-accent' : undefined} />
                   All
                 </button>
               </div>
@@ -495,14 +495,14 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
                 <button
                   onClick={() => setDeptDialogOpen(true)}
                   title="Add a department floor to the tower"
-                  className="flex items-center gap-1 rounded-lg bg-white/10 hover:bg-white/15 px-2 py-1 text-[11.5px] font-medium text-neutral-200 hover:text-white transition-all cursor-pointer"
+                  className="flex h-7 cursor-pointer items-center gap-1 rounded-lg px-2 text-[12px] font-medium text-t3 transition-colors hover:bg-n4 hover:text-t1"
                 >
-                  <Plus size={12} className="text-emerald-400" />
+                  <Plus size={12} strokeWidth={2} />
                   <span>Dept</span>
                 </button>
               )}
 
-              <span className="h-3 w-px bg-white/15 mx-0.5" />
+              <span className="mx-0.5 h-4 w-px bg-[var(--border-default)]" />
             </>
           )}
 
@@ -511,13 +511,13 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
             <button
               onClick={() => setLauncherOpen((v) => !v)}
               title="Spawn a new terminal agent session"
-              className="flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/15 px-2 py-1 text-[11.5px] font-medium text-neutral-200 hover:text-white transition-all cursor-pointer"
+              className="btn-accent-soft flex h-7 cursor-pointer items-center gap-1.5 rounded-lg pr-2 pl-2.5 text-[12px] font-medium"
             >
-              <Plus size={13} className="text-amber-400" />
+              <Plus size={13} strokeWidth={2} />
               <span>Launch Agent</span>
               <ChevronDown
                 size={12}
-                className={`transition-transform duration-200 text-neutral-400 ${
+                className={`opacity-70 transition-transform duration-200 ${
                   launcherOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -532,20 +532,20 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.95 }}
                   transition={{ duration: 0.14 }}
-                  className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-white/12 bg-neutral-900/95 p-1.5 backdrop-blur-2xl shadow-2xl"
+                  className="pop-surface absolute top-full right-0 mt-2 w-64 origin-top-right rounded-xl p-1"
                 >
-                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 border-b border-white/10 mb-1 flex items-center justify-between">
+                  <div className="mb-1 flex items-center justify-between border-b border-[var(--border-subtle)] px-2 pt-1.5 pb-2 text-[10px] font-semibold tracking-[0.07em] text-t4 uppercase">
                     <span>Available Agent CLIs</span>
-                    <Cpu size={11} className="text-neutral-500" />
+                    <Cpu size={11} className="text-t4" />
                   </div>
                   {LAUNCH_PRESETS.map((preset) => (
                     <button
                       key={preset.key}
                       onClick={() => handleLaunch(preset.key)}
-                      className="w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/10 group cursor-pointer"
+                      className="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-n4"
                     >
                       <div
-                        className="h-6 w-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-inner"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.4)]"
                         style={{
                           background: `hsl(${preset.hue} 60% 45%)`
                         }}
@@ -553,16 +553,16 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
                         {preset.label.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[12px] font-medium text-neutral-200 group-hover:text-white truncate">
+                        <div className="truncate text-[12px] font-medium text-t2 group-hover:text-t1">
                           {preset.label}
                         </div>
-                        <div className="text-[10px] text-neutral-400 truncate">
+                        <div className="truncate text-[10.5px] text-t4">
                           {preset.desc}
                         </div>
                       </div>
                       <Plus
                         size={12}
-                        className="opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity shrink-0"
+                        className="shrink-0 text-accent opacity-0 transition-opacity group-hover:opacity-100"
                       />
                     </button>
                   ))}
@@ -571,21 +571,18 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
             </AnimatePresence>
           </div>
 
-          <span className="h-3 w-px bg-white/15 mx-0.5" />
+          <span className="mx-0.5 h-4 w-px bg-[var(--border-default)]" />
 
           {/* Office Theme Switcher */}
-          <div
-            className="flex items-center gap-0.5 rounded-lg bg-white/5 p-0.5"
-            title="Office theme"
-          >
+          <div className="seg-track gap-0.5" title="Office theme">
             {(['loft', 'avengers'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTheme(t)}
-                className={`rounded-md px-2 py-0.5 text-[11px] font-medium capitalize transition-colors cursor-pointer ${
+                className={`flex h-6 cursor-pointer items-center rounded-[7px] px-2 text-[11.5px] font-medium capitalize transition-colors ${
                   theme === t
-                    ? 'bg-white/15 text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                    : 'text-t3 hover:text-t2'
                 }`}
               >
                 {t}
@@ -593,17 +590,17 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
             ))}
           </div>
 
-          <span className="h-3 w-px bg-white/15 mx-0.5" />
+          <span className="mx-0.5 h-4 w-px bg-[var(--border-default)]" />
 
           {/* Mini player toggle — when on, leaving this tab keeps the office
               alive in a floating window instead of pausing it */}
           <button
             onClick={() => setOfficePiP(!officePiP)}
             title="Mini player when away"
-            className={`rounded-lg p-1.5 transition-colors cursor-pointer ${
+            className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition-colors ${
               officePiP
-                ? 'bg-amber-400/20 text-amber-300'
-                : 'text-neutral-500 hover:text-neutral-200 hover:bg-white/10'
+                ? 'bg-accent-subtle text-accent shadow-[inset_0_0_0_1px_rgba(245,165,36,0.3)]'
+                : 'text-t3 hover:bg-n4 hover:text-t1'
             }`}
           >
             <PictureInPicture2 size={13} />
@@ -621,11 +618,11 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.92 }}
             transition={{ type: 'spring', stiffness: 420, damping: 30 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-4 rounded-2xl border border-white/15 bg-neutral-900/92 px-5 py-3 backdrop-blur-2xl shadow-2xl"
+            className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-5 rounded-2xl border border-[var(--border-default)] bg-[rgba(22,23,27,0.9)] bg-[image:var(--grad-chrome)] py-3 pr-3 pl-3.5 shadow-[var(--shadow-pop)] backdrop-blur-2xl"
           >
             <div className="flex items-center gap-3">
               <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl font-bold text-white shadow-inner text-[14px]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[13px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_8px_rgba(0,0,0,0.4)]"
                 style={{
                   background: `linear-gradient(135deg, hsl(${targetedAgent.hue} 65% 50%), hsl(${targetedAgent.hue} 75% 35%))`
                 }}
@@ -635,14 +632,14 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
               <div>
                 <div className="flex items-center gap-2">
                   <StatusDot status={targetedAgent.status} />
-                  <span className="font-semibold text-white text-[14.5px] tracking-tight">
+                  <span className="text-[13.5px] font-semibold tracking-[-0.01em] text-t1">
                     {targetedAgent.name}
                   </span>
-                  <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 uppercase tracking-wider">
+                  <span className="rounded-full border border-[var(--border-subtle)] bg-n3 px-1.5 py-px text-[9.5px] leading-[14px] font-semibold tracking-[0.06em] text-t3 uppercase">
                     {targetedAgent.domain}
                   </span>
                 </div>
-                <p className="text-[12px] text-neutral-400 max-w-[300px] truncate mt-0.5 font-mono">
+                <p className="mt-0.5 max-w-[300px] truncate font-mono text-[11.5px] text-t3">
                   {targetedAgent.taskId || targetedAgent.brief}
                 </p>
               </div>
@@ -651,11 +648,11 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
             {/* Direct Open Terminal Button */}
             <button
               onClick={() => goToTerminal(targetedAgent.id)}
-              className="group relative flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2.5 font-medium text-white shadow-lg shadow-amber-500/30 transition-all hover:from-amber-400 hover:to-amber-500 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              className="group relative flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-accent pr-2 pl-3.5 text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.35),0_6px_18px_-6px_rgba(245,165,36,0.55)] transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.98]"
             >
-              <Terminal size={15} />
-              <span className="text-[13px] font-semibold tracking-wide">Open Terminal</span>
-              <span className="ml-0.5 rounded bg-black/30 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-amber-200">
+              <Terminal size={14} strokeWidth={2} />
+              <span className="text-[12.5px] font-semibold">Open Terminal</span>
+              <span className="ml-0.5 rounded-md bg-black/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold">
                 2×
               </span>
             </button>
@@ -670,14 +667,14 @@ export function OfficeView({ mini = false, paused = false }: { mini?: boolean; p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="pointer-events-none absolute bottom-3 left-4 z-20 rounded-lg border border-white/5 bg-neutral-950/60 px-3 py-1.5 text-[11px] font-mono text-t4 backdrop-blur-md"
+          className="pointer-events-none absolute bottom-3 left-3 z-20 rounded-lg border border-[var(--border-subtle)] bg-[rgba(10,11,13,0.66)] px-2.5 py-1.5 text-[11px] text-t3 backdrop-blur-md"
         >
           click a floor to enter · drag to look around
         </motion.div>
       )}
       {!mini && view === 'dept' && (
-        <div className="pointer-events-none absolute bottom-3 left-4 z-20 flex items-center gap-2 text-[11px] font-mono text-neutral-400/80 bg-neutral-950/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/5">
-          <Eye size={12} className="text-amber-400/80" />
+        <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[rgba(10,11,13,0.66)] px-2.5 py-1.5 text-[11px] text-t3 backdrop-blur-md">
+          <Eye size={12} className="text-accent/80" />
           <span>Drag Pan · Right-Drag Orbit · Scroll Zoom · WASD Move · Click Agent Select · Double-Click Terminal</span>
         </div>
       )}

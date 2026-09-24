@@ -17,11 +17,40 @@ import { execFile } from 'child_process'
 import { DatabaseSync } from 'node:sqlite'
 import type { CliSessionEntry } from '../shared/cli-sessions'
 
-const MAX_SESSIONS = 30
+/** Sessions listed per CLI — effectively "all of them"; the rail renders
+ *  them incrementally and summaries are cached by file+mtime. */
+const MAX_SESSIONS = 2000
 /** Bytes sampled from the top of a transcript — enough for cwd/summary lines. */
 const HEAD_BYTES = 48 * 1024
 /** Rollout files probed per codex scan, newest-first — bounds the fs walk. */
-const CODEX_PROBE_LIMIT = 120
+const CODEX_PROBE_LIMIT = 4000
+/** Parallel transcript head reads — keeps a long history off the fd limit. */
+const READ_CONCURRENCY = 24
+
+/** Order-preserving map with at most `limit` promises in flight. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const i = next++
+      out[i] = await fn(items[i])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return out
+}
+
+/** file → summary at a given mtime: re-listing only re-reads transcripts that moved. */
+const summaryCache = new Map<string, { mtime: number; summary: string | null }>()
+
+async function cachedSummary(file: string, mtime: number): Promise<string | null> {
+  const hit = summaryCache.get(file)
+  if (hit && hit.mtime === mtime) return hit.summary
+  const summary = headSummary(await readHead(file).catch(() => ''))
+  summaryCache.set(file, { mtime, summary })
+  return summary
+}
 
 async function readHead(path: string): Promise<string> {
   const fh = await fs.open(path, 'r')
@@ -137,14 +166,12 @@ async function jsonlProjectSessions(root: string): Promise<CliSessionEntry[]> {
 
   found.sort((a, b) => b.at - a.at)
   const top = found.slice(0, MAX_SESSIONS)
-  return Promise.all(
-    top.map(async ({ id, at, file, cwd }) => ({
-      id,
-      at,
-      cwd,
-      summary: headSummary(await readHead(file).catch(() => ''))
-    }))
-  )
+  return mapLimit(top, READ_CONCURRENCY, async ({ id, at, file, cwd }) => ({
+    id,
+    at,
+    cwd,
+    summary: await cachedSummary(file, at)
+  }))
 }
 
 function claudeSessions(): Promise<CliSessionEntry[]> {
@@ -177,31 +204,41 @@ async function codexSessions(): Promise<CliSessionEntry[]> {
   // rollout filenames embed the timestamp — name order ≈ recency
   files.sort((a, b) => b.localeCompare(a))
 
-  const out: CliSessionEntry[] = []
-  for (const file of files) {
-    if (out.length >= MAX_SESSIONS) break
-    const head = await readHead(file).catch(() => '')
-    if (!head) continue
-    let meta: { id?: string; timestamp?: string; cwd?: string } | null = null
-    try {
-      const first = JSON.parse(head.split('\n', 1)[0])
-      if (first?.type === 'session_meta') meta = first.payload ?? null
-    } catch {
-      continue
-    }
-    if (!meta) continue
-    const st = await fs.stat(file).catch(() => null)
-    out.push({
-      id: meta.id ?? file.split(/[\\/]/).pop()!.replace(/\.jsonl$/, ''),
-      // last activity: a resumed rollout keeps its start timestamp but its
-      // mtime moves — that's what lets a pane find the session it resumed
-      at: st?.mtimeMs ?? (meta.timestamp ? Date.parse(meta.timestamp) : 0),
-      summary: headSummary(head),
-      cwd: meta.cwd ?? null
-    })
-  }
+  const entries = await mapLimit(files.slice(0, MAX_SESSIONS), READ_CONCURRENCY, codexEntry)
+  const out = entries.filter((e): e is CliSessionEntry => !!e)
   out.sort((a, b) => b.at - a.at)
   return out.slice(0, MAX_SESSIONS)
+}
+
+/** file → parsed entry at a given mtime (rollouts only grow on resume). */
+const codexCache = new Map<string, { mtime: number; entry: CliSessionEntry | null }>()
+
+async function codexEntry(file: string): Promise<CliSessionEntry | null> {
+  const st = await fs.stat(file).catch(() => null)
+  if (!st) return null
+  const hit = codexCache.get(file)
+  if (hit && hit.mtime === st.mtimeMs) return hit.entry
+  let entry: CliSessionEntry | null = null
+  const head = await readHead(file).catch(() => '')
+  try {
+    const first = head ? JSON.parse(head.split('\n', 1)[0]) : null
+    const meta: { id?: string; timestamp?: string; cwd?: string } | null =
+      first?.type === 'session_meta' ? (first.payload ?? null) : null
+    if (meta) {
+      entry = {
+        id: meta.id ?? file.split(/[\\/]/).pop()!.replace(/\.jsonl$/, ''),
+        // last activity: a resumed rollout keeps its start timestamp but its
+        // mtime moves — that's what lets a pane find the session it resumed
+        at: st.mtimeMs,
+        summary: headSummary(head),
+        cwd: meta.cwd ?? null
+      }
+    }
+  } catch {
+    /* partial first line — not a rollout we can read */
+  }
+  codexCache.set(file, { mtime: st.mtimeMs, entry })
+  return entry
 }
 
 // ── devin ────────────────────────────────────────────────────────────
@@ -384,7 +421,7 @@ const MUSE_PROBE = [
   '    try:',
   "        db = sqlite3.connect('file:' + p + '?mode=ro', uri=True)",
   '        cols = (\'session_id\',\'session_name\',\'title\',\'first_user_prompt\',\'workspace_root\',\'updated_at_us\')',
-  "        sel = 'SELECT ' + ','.join(cols) + \" FROM sessions WHERE status='valid' ORDER BY updated_at_us DESC LIMIT 30\"",
+  "        sel = 'SELECT ' + ','.join(cols) + \" FROM sessions WHERE status='valid' ORDER BY updated_at_us DESC LIMIT 2000\"",
   '        out += [dict(zip((\'id\',\'name\',\'title\',\'prompt\',\'cwd\',\'at\'), r)) for r in db.execute(sel)]',
   '        db.close()',
   '    except Exception:',

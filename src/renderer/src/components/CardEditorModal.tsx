@@ -120,12 +120,12 @@ export function CardEditorModal({
   }
 
   const inputCls =
-    'w-full rounded-md border border-[var(--border-default)] bg-n2 px-2.5 py-1.5 text-[12.5px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]'
+    'w-full rounded-lg border border-[var(--border-default)] bg-n1 px-2.5 py-1.5 text-[12.5px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none transition-colors placeholder:text-t4 hover:border-[var(--border-strong)] focus:border-[rgba(245,165,36,0.45)]'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[3px]" onClick={onClose}>
       <div
-        className="w-[440px] rounded-xl border border-[var(--border-default)] bg-popover p-4 shadow-lg-dark"
+        className="pop-surface pop-in w-[460px] max-w-[92vw] overflow-hidden rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose()
@@ -135,19 +135,23 @@ export function CardEditorModal({
           }
         }}
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="m-0 flex items-center gap-1.5 text-[13px] font-semibold text-t1">
-            <Pencil size={12} className="text-t3" /> Edit task
+        <div className="pane-head flex h-12 items-center justify-between border-b border-[var(--border-subtle)] pr-3 pl-5">
+          <h3 className="m-0 flex items-center gap-2 text-[13.5px] font-semibold tracking-[-0.01em] text-t1">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-n4 text-t3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <Pencil size={11} />
+            </span>
+            Edit task
           </h3>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-t4 transition-colors hover:bg-n4 hover:text-t2"
+            aria-label="Close"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-t3 transition-colors hover:bg-n4 hover:text-t1"
           >
-            <X size={13} />
+            <X size={14} />
           </button>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4 px-5 py-4">
           <div>
             <div className="micro-label mb-1.5">Title</div>
             <input
@@ -173,19 +177,21 @@ export function CardEditorModal({
 
           <div>
             <div className="micro-label mb-1.5">Priority</div>
-            <div className="flex gap-1">
+            <div className="seg-track gap-0.5">
               {PRIORITY_OPTIONS.map((p) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => setPriority(p.id)}
                   className={clsx(
-                    'flex-1 rounded-md border px-2 py-1 text-[11.5px] transition-colors',
+                    'h-[26px] flex-1 rounded-[7px] px-2 text-[11.5px] font-medium transition-colors',
                     priority === p.id
                       ? p.id === 2
-                        ? 'border-[rgba(229,72,77,0.5)] bg-[rgba(229,72,77,0.12)] text-[var(--color-needs)]'
-                        : 'border-accent bg-accent-subtle text-accent'
-                      : 'border-[var(--border-default)] text-t3 hover:text-t1'
+                        ? 'bg-[rgba(229,72,77,0.14)] text-[var(--color-needs)] shadow-[inset_0_0_0_1px_rgba(229,72,77,0.4)]'
+                        : p.id === 1
+                          ? 'bg-accent-subtle text-accent shadow-[inset_0_0_0_1px_rgba(245,165,36,0.4)]'
+                          : 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                      : 'text-t3 hover:text-t1'
                   )}
                 >
                   {p.label}
@@ -196,17 +202,17 @@ export function CardEditorModal({
 
           <div>
             <div className="micro-label mb-1.5">Column</div>
-            <div className="flex gap-1">
+            <div className="seg-track gap-0.5">
               {STATUS_OPTIONS.map((o) => (
                 <button
                   key={o.id}
                   type="button"
                   onClick={() => setStatus(o.id)}
                   className={clsx(
-                    'flex-1 rounded-md border px-1.5 py-1 text-[11.5px] transition-colors',
+                    'h-[26px] flex-1 rounded-[7px] px-1.5 text-[11.5px] font-medium transition-colors',
                     status === o.id
-                      ? 'border-[var(--border-strong)] bg-n4 text-t1'
-                      : 'border-[var(--border-default)] text-t3 hover:text-t1'
+                      ? 'bg-gradient-to-b from-n5 to-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4)]'
+                      : 'text-t3 hover:text-t1'
                   )}
                 >
                   {o.label}
@@ -216,10 +222,10 @@ export function CardEditorModal({
           </div>
 
           <div>
-            <div className="micro-label mb-1.5 flex items-center gap-1">
+            <div className="micro-label mb-1.5 flex items-center gap-1.5">
               <Calendar size={10} /> Due / scheduled
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <input
                 type="datetime-local"
                 value={due}
@@ -236,7 +242,7 @@ export function CardEditorModal({
                     key={label}
                     type="button"
                     onClick={() => setDue(presetDue(d))}
-                    className="shrink-0 rounded-md border border-[var(--border-default)] px-2 py-1.5 text-[11px] text-t3 transition-colors hover:border-[var(--border-strong)] hover:text-t1"
+                    className="flex h-[30px] shrink-0 items-center rounded-lg border border-[var(--border-default)] px-2.5 text-[11.5px] text-t3 transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1"
                   >
                     {label}
                   </button>
@@ -245,7 +251,7 @@ export function CardEditorModal({
                 <button
                   onClick={() => setDue('')}
                   title="Clear the date"
-                  className="shrink-0 rounded-md border border-[var(--border-default)] px-2 py-1.5 text-[11px] text-t3 transition-colors hover:border-[var(--border-strong)] hover:text-t1"
+                  className="flex h-[30px] shrink-0 items-center rounded-lg border border-[var(--border-default)] px-2.5 text-[11.5px] text-t3 transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1"
                 >
                   clear
                 </button>
@@ -254,7 +260,7 @@ export function CardEditorModal({
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-n1/40 px-5 py-3">
           <Button
             size="sm"
             variant={confirmDelete ? 'danger' : 'ghost'}
@@ -269,7 +275,7 @@ export function CardEditorModal({
               Cancel
             </Button>
             <Button size="sm" variant="accent" disabled={pending} onClick={() => void save()}>
-              Save <span className="ml-1 text-[10px] opacity-60">Ctrl↵</span>
+              Save <span className="ml-0.5 font-mono text-[10px] opacity-60">Ctrl↵</span>
             </Button>
           </div>
         </div>

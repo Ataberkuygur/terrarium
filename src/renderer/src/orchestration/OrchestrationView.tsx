@@ -26,6 +26,8 @@ import {
   Cable,
   Check,
   Copy,
+  LayoutDashboard,
+  Waypoints,
   Maximize2,
   Minimize2,
   Plus,
@@ -46,8 +48,10 @@ import {
   subscribeStatus,
   useOrch,
   effectiveCommand,
+  networkLabel,
   writeToNode,
   type NodeStatus,
+  type OrchLayout,
   type OrchNetwork,
   type OrchNode
 } from '../lib/orchestration'
@@ -56,7 +60,19 @@ import { PaneDispatchContext } from '../workspace/pane-context'
 import { CommandMenu } from '../workspace/CommandMenu'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { paneClose, paneSplit, uiTap } from '../lib/sfx'
-import { expandedRect, initialView, layoutNetwork, type NetworkLayout, type Rect } from './layout'
+import {
+  DEFAULT_TILE_FRACTIONS,
+  clampFractions,
+  expandedRect,
+  initialView,
+  layoutNetwork,
+  tileNetwork,
+  type NetworkLayout,
+  type Rect,
+  type Side,
+  type TileFractions,
+  type TileLayout
+} from './layout'
 import { fitView, persistedViews, usePanZoom } from '../lib/canvas-nav'
 import { CanvasControls } from '../components/CanvasControls'
 import { Tethers } from './Tethers'
@@ -80,7 +96,7 @@ const AGENT_CLIS: readonly { label: string; command: string | undefined }[] = [
 ]
 
 const iconBtn =
-  'flex h-5 w-5 items-center justify-center rounded text-t4 transition-colors hover:bg-n5 hover:text-t2 disabled:pointer-events-none disabled:opacity-30'
+  'flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n5 hover:text-t1 disabled:pointer-events-none disabled:opacity-30'
 
 /** A node's status badge — re-renders only when it flips (lib/orchestration). */
 function useNodeStatus(sid: string): NodeStatus {
@@ -115,7 +131,7 @@ export function OrchestrationTabs() {
           useOrch.getState().createNetwork()
         }}
         title="New network — a fresh orchestrator in its own tab"
-        className="ml-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded text-t3 transition-colors hover:bg-n4 hover:text-t1"
+        className="ml-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-dashed border-[var(--border-default)] text-t3 transition-colors hover:border-[var(--border-strong)] hover:bg-n3 hover:text-t1"
       >
         <Plus size={13} />
       </button>
@@ -123,7 +139,7 @@ export function OrchestrationTabs() {
   )
 }
 
-/** + Subagent and Connect for the active network. */
+/** Canvas ⇄ Workspace switch, + Subagent and Connect for the active network. */
 export function OrchestrationActions() {
   const networks = useOrch((s) => s.networks)
   const activeId = useOrch((s) => s.activeId)
@@ -131,9 +147,67 @@ export function OrchestrationActions() {
   if (!active) return null
   return (
     <>
+      <LayoutSwitch />
       <SpawnButton net={active} />
       <ConnectButton net={active} />
     </>
+  )
+}
+
+/**
+ * Canvas (pan/zoom web, tethers, free card placement) ⇄ Workspace (the
+ * orchestrator tiled in the middle of the window, subagents around it —
+ * no panning, nothing overlaps). Cards keep their terminals across the flip.
+ */
+function LayoutSwitch() {
+  const layout = useOrch((s) => s.layout)
+  const opts: { id: OrchLayout; label: string; icon: ReactNode; title: string }[] = [
+    {
+      id: 'canvas',
+      label: 'Canvas',
+      icon: <Waypoints size={12} strokeWidth={1.9} />,
+      title: 'Canvas — pan and zoom a web of cards around the orchestrator'
+    },
+    {
+      id: 'workspace',
+      label: 'Workspace',
+      icon: <LayoutDashboard size={12} strokeWidth={1.9} />,
+      title: 'Workspace — orchestrator in the middle, subagents tiled around it'
+    }
+  ]
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Network layout"
+      className="seg-track mr-1 shrink-0"
+    >
+      <span
+        aria-hidden
+        className="seg-thumb"
+        style={{ left: 2, width: 'calc(50% - 2px)', transform: layout === 'workspace' ? 'translateX(100%)' : 'none' }}
+      />
+      {opts.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          role="radio"
+          aria-checked={layout === o.id}
+          title={o.title}
+          onClick={() => {
+            if (layout === o.id) return
+            uiTap()
+            useOrch.getState().setLayout(o.id)
+          }}
+          className={clsx(
+            'relative z-[1] flex h-[26px] w-[100px] items-center justify-center gap-1.5 rounded-[7px] text-[12px] font-medium transition-colors duration-150',
+            layout === o.id ? 'text-t1' : 'text-t3 hover:text-t2'
+          )}
+        >
+          <span className={layout === o.id ? 'text-accent' : undefined}>{o.icon}</span>
+          {o.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -203,36 +277,45 @@ function NetworkTab({ net, active }: { net: OrchNetwork; active: boolean }) {
   return (
     <div
       className={clsx(
-        'group/tab flex h-7 shrink-0 items-center gap-1.5 rounded-md border pl-2.5 pr-1 text-[12px] transition-colors',
+        'group/tab relative flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-md border pl-2.5 pr-1 text-[12px] transition-[background-color,border-color,color] duration-150',
         active
-          ? 'border-[var(--border-default)] bg-n4 text-t1'
+          ? 'border-[var(--border-default)] bg-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
           : 'border-transparent text-t3 hover:bg-n3 hover:text-t2'
       )}
       onClick={() => useOrch.getState().setActive(net.id)}
       onDoubleClick={() => setEditing(true)}
-      title="Double-click to rename"
+      title={`${networkLabel(net)}\nDouble-click to ${net.topic ? 'change' : 'set'} the topic`}
     >
       <span
         className={clsx('h-1.5 w-1.5 shrink-0 rounded-full', busy && 'status-pulse')}
         style={{ background: busy ? 'var(--color-working)' : 'var(--color-n8)' }}
       />
+      <span className={clsx('shrink-0 font-medium', active ? 'text-t1' : undefined)}>{net.name}</span>
       {editing ? (
-        <input
-          autoFocus
-          defaultValue={net.name}
-          onBlur={(e) => {
-            useOrch.getState().renameNetwork(net.id, e.currentTarget.value)
-            setEditing(false)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur()
-            if (e.key === 'Escape') setEditing(false)
-          }}
-          className="w-24 rounded bg-n2 px-1 text-[12px] text-t1 outline-none"
-        />
-      ) : (
-        <span className="max-w-[140px] truncate">{net.name}</span>
-      )}
+        <>
+          <span className="-ml-1 text-t4">:</span>
+          <input
+            autoFocus
+            defaultValue={net.topic ?? ''}
+            placeholder="Topic — e.g. Senior loop"
+            onClick={(e) => e.stopPropagation()}
+            onBlur={(e) => {
+              useOrch.getState().setNetworkTopic(net.id, e.currentTarget.value)
+              setEditing(false)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            className="w-40 rounded bg-n2 px-1.5 text-[12px] text-t1 outline-none ring-1 ring-[rgba(245,165,36,0.35)] placeholder:text-t4"
+          />
+        </>
+      ) : net.topic ? (
+        <span className={clsx('-ml-1 max-w-[180px] truncate', active ? 'text-t2' : 'text-t3')}>
+          <span className="text-t4">: </span>
+          {net.topic}
+        </span>
+      ) : null}
       <span className="tnum rounded bg-n2 px-1 text-[10px] leading-4 text-t3" title="subagents">
         {net.agents.length}
       </span>
@@ -279,6 +362,18 @@ interface ResizeState {
   h: number
 }
 
+/** Workspace-layout band sizes — one setting for every network, persisted. */
+const TILES_KEY = 'terrarium.orchestration.tiles'
+function loadTileFractions(): TileFractions {
+  try {
+    const v = JSON.parse(localStorage.getItem(TILES_KEY) ?? 'null') as Partial<TileFractions> | null
+    if (v && typeof v === 'object') return clampFractions({ ...DEFAULT_TILE_FRACTIONS, ...v })
+  } catch {
+    /* corrupt / unavailable → defaults */
+  }
+  return DEFAULT_TILE_FRACTIONS
+}
+
 /** Smallest a card can be resized to (world px). */
 const CARD_MIN_W = 220
 const CARD_MIN_H = 120
@@ -287,8 +382,11 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ W: 0, H: 0 })
   const expandedId = useOrch((s) => s.expandedId)
+  const tiled = useOrch((s) => s.layout === 'workspace')
   const [drag, setDrag] = useState<DragState | null>(null)
   const [resize, setResize] = useState<ResizeState | null>(null)
+  const [fractions, setFractions] = useState(loadTileFractions)
+  const [gutterDrag, setGutterDrag] = useState<Side | null>(null)
 
   useLayoutEffect(() => {
     const el = hostRef.current
@@ -344,7 +442,7 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
     max: 2.5,
     initial: netViews.get(net.id),
     isBackground: (el) => !el.closest('[data-canvas-item],[data-canvas-ui]'),
-    disabled: !!expanded,
+    disabled: !!expanded || tiled,
     onFit: () => fit(),
     onCommit: (v) => netViews.set(net.id, v),
     // sideways-only canvas: no vertical travel, the wheel pans left/right
@@ -452,19 +550,81 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
     const y = Math.round(r.y * z)
     return { x, y, w: Math.round((r.x + r.w) * z) - x, h: Math.round((r.y + r.h) * z) - y }
   }
-  // the focus view is screen-anchored: undo the world translate
-  const exp = expandedRect(W, H)
-  const expandedScreen: Rect = {
-    x: Math.round(exp.x - Math.round(view.x)),
-    y: Math.round(exp.y - Math.round(view.y)),
-    w: Math.round(exp.w),
-    h: Math.round(exp.h)
+  // screen-anchored rects (focus view, tiled layout): undo the world translate
+  const onScreen = (r: Rect): Rect => ({
+    x: Math.round(r.x - Math.round(view.x)),
+    y: Math.round(r.y - Math.round(view.y)),
+    w: Math.round(r.w),
+    h: Math.round(r.h)
+  })
+  const expandedScreen = onScreen(expandedRect(W, H))
+
+  // Workspace layout: hub in the middle, subagents tiled around it
+  const tiles = useMemo(
+    () => (tiled && W > 0 ? tileNetwork(net.agents.length, W, H, fractions) : null),
+    [tiled, W, H, net.agents.length, fractions]
+  )
+
+  // gutter drag → resize one band (fraction of the window), saved on release
+  const beginGutter = (side: Side, e: React.PointerEvent) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    const host = hostRef.current?.getBoundingClientRect()
+    if (!host) return
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+    let last = fractions
+    setGutterDrag(side)
+    const onMove = (ev: PointerEvent) => {
+      const px = ev.clientX - host.left
+      const py = ev.clientY - host.top
+      const v =
+        // side gutters set the width of ONE column (the band is k of them)
+        side === 'left'
+          ? px / W / Math.max(1, tiles?.count.left ?? 1)
+          : side === 'right'
+            ? (W - px) / W / Math.max(1, tiles?.count.right ?? 1)
+            : side === 'top'
+              ? py / H
+              : (H - py) / H
+      last = clampFractions({ ...last, [side]: v })
+      setFractions(last)
+    }
+    const onUp = () => {
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+      el.removeEventListener('pointercancel', onUp)
+      setGutterDrag(null)
+      try {
+        localStorage.setItem(TILES_KEY, JSON.stringify(last))
+      } catch {
+        /* non-fatal */
+      }
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+    el.addEventListener('pointercancel', onUp)
+  }
+  /** Double-click a gutter → that band back to its default size. */
+  const resetGutter = (side: Side) => {
+    const next = { ...fractions, [side]: DEFAULT_TILE_FRACTIONS[side] }
+    setFractions(next)
+    try {
+      localStorage.setItem(TILES_KEY, JSON.stringify(next))
+    } catch {
+      /* non-fatal */
+    }
   }
 
   return (
     <div
       ref={hostRef}
-      className={clsx('absolute inset-0 overflow-hidden', !expanded && 'cursor-grab')}
+      className={clsx(
+        'absolute inset-0 overflow-hidden',
+        tiled ? 'bg-canvas' : 'dot-canvas',
+        !expanded && !tiled && 'cursor-grab'
+      )}
     >
       {W > 0 && (
         <>
@@ -473,31 +633,37 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
             className="absolute left-0 top-0"
             style={{ width: Math.round(W * z), height: Math.round(H * z) }}
           >
-            <Tethers
-              W={W}
-              H={H}
-              z={z}
-              layout={placed}
-              sids={sids}
-              dimmed={!!expanded}
-              snap={!!drag || !!resize || zooming}
-            />
+            {!tiles && (
+              <Tethers
+                W={W}
+                H={H}
+                z={z}
+                layout={placed}
+                sids={sids}
+                dimmed={!!expanded}
+                snap={!!drag || !!resize || zooming}
+              />
+            )}
 
             <NodeCard
               net={net}
               node={net.orchestrator}
-              rect={scaled(placed.hub)}
+              rect={tiles ? onScreen(tiles.hub) : scaled(placed.hub)}
               index={0}
-              zoom={layoutZoom}
+              zoom={tiles ? 1 : layoutZoom}
               still={
-                zooming || drag?.id === net.orchestrator.id || resize?.id === net.orchestrator.id
+                !!gutterDrag ||
+                zooming ||
+                drag?.id === net.orchestrator.id ||
+                resize?.id === net.orchestrator.id
               }
-              onDragStart={beginDrag}
-              onResizeStart={(e) => beginResize(net.orchestrator, placed.hub, e)}
+              onDragStart={tiles ? undefined : beginDrag}
+              onResizeStart={tiles ? undefined : (e) => beginResize(net.orchestrator, placed.hub, e)}
             />
 
             {net.agents.map((a, i) => {
               const slot = placed.slots[i]
+              const tile = tiles?.slots[i]
               if (!slot) return null
               const isExp = expanded?.id === a.id
               return (
@@ -506,12 +672,12 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
                   net={net}
                   node={a}
                   index={i + 1}
-                  rect={isExp ? expandedScreen : scaled(slot)}
-                  zoom={isExp ? 1 : layoutZoom}
+                  rect={isExp ? expandedScreen : tile ? onScreen(tile) : scaled(slot)}
+                  zoom={isExp || tile ? 1 : layoutZoom}
                   expanded={isExp}
-                  still={zooming || drag?.id === a.id || resize?.id === a.id}
-                  onDragStart={isExp ? undefined : beginDrag}
-                  onResizeStart={isExp ? undefined : (e) => beginResize(a, slot, e)}
+                  still={!!gutterDrag || zooming || drag?.id === a.id || resize?.id === a.id}
+                  onDragStart={isExp || tile ? undefined : beginDrag}
+                  onResizeStart={isExp || tile ? undefined : (e) => beginResize(a, slot, e)}
                 />
               )
             })}
@@ -525,9 +691,9 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
               />
             )}
 
-            {net.agents.length === 0 && (
+            {net.agents.length === 0 && !tiles && (
               <div
-                className="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-[var(--border-default)] bg-n2/90 px-3 py-1 text-[11.5px] text-t3"
+                className="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-[var(--border-default)] bg-n2/90 px-3 py-1 text-[11.5px] text-t3 backdrop-blur"
                 style={{
                   left: (placed.hub.x + placed.hub.w / 2) * z,
                   top: (placed.hub.y + placed.hub.h) * z + 8
@@ -539,7 +705,11 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
             )}
           </div>
 
-          {!expanded && (
+          {tiles && !expanded && (
+            <TileGutters tiles={tiles} W={W} active={gutterDrag} onBegin={beginGutter} onReset={resetGutter} />
+          )}
+
+          {!expanded && !tiles && (
             <CanvasControls
               view={view}
               onZoom={(f) => zoomBy(f)}
@@ -568,6 +738,65 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * Drag handles between the tiled bands and the orchestrator — hairlines
+ * that brighten on hover; dragging resizes that band for every network,
+ * double-click restores its default.
+ */
+function TileGutters({
+  tiles,
+  W,
+  active,
+  onBegin,
+  onReset
+}: {
+  tiles: TileLayout
+  W: number
+  active: Side | null
+  onBegin: (side: Side, e: React.PointerEvent) => void
+  onReset: (side: Side) => void
+}) {
+  const sides: Side[] = ['left', 'right', 'top', 'bottom']
+  return (
+    <>
+      {sides.map((side) => {
+        const at = tiles.edges[side]
+        if (at === null) return null
+        const vertical = side === 'left' || side === 'right'
+        const style: React.CSSProperties = vertical
+          ? { left: at - 4, top: tiles.mid.y0, width: 8, height: tiles.mid.y1 - tiles.mid.y0 }
+          : { left: 8, top: at - 4, width: W - 16, height: 8 }
+        return (
+          <div
+            key={side}
+            data-canvas-ui
+            role="separator"
+            aria-orientation={vertical ? 'vertical' : 'horizontal'}
+            title="Drag to resize · double-click to reset"
+            onPointerDown={(e) => onBegin(side, e)}
+            onDoubleClick={() => onReset(side)}
+            className={clsx(
+              'group/gutter absolute z-[25] touch-none',
+              vertical ? 'cursor-col-resize' : 'cursor-row-resize'
+            )}
+            style={style}
+          >
+            <span
+              className={clsx(
+                'absolute rounded-full transition-colors duration-150',
+                vertical ? 'inset-y-8 left-[3.5px] w-px' : 'inset-x-8 top-[3.5px] h-px',
+                active === side
+                  ? 'bg-[var(--color-accent)]'
+                  : 'bg-transparent group-hover/gutter:bg-[var(--color-n8)]'
+              )}
+            />
+          </div>
+        )
+      })}
+    </>
   )
 }
 
@@ -612,20 +841,24 @@ function NodeCard({
   const restoring = useOrch((s) => s.restoring)
   const status = useNodeStatus(sid)
   const meta = STATUS_META[status]
-  const headerH = hub ? 32 : 28
+  const headerH = hub ? 34 : 30
   const compact = !hub && !expanded && rect.h - headerH < 92
+  // too thin for [name | CLI badge | controls] — the name wins
+  const narrow = !expanded && rect.w < 300
   const glide = '320ms var(--ease-out-expo)'
 
   return (
     <div
       data-canvas-item
       className={clsx(
-        'group/card absolute flex cursor-default flex-col overflow-hidden rounded-lg border bg-base',
+        'group/card absolute flex cursor-default flex-col overflow-hidden rounded-[10px] border bg-base',
         expanded
-          ? 'z-30 border-[var(--border-strong)] shadow-[0_16px_48px_rgba(0,0,0,0.5)]'
+          ? 'z-30 border-[var(--border-strong)] shadow-[0_24px_64px_rgba(0,0,0,0.6)]'
           : clsx(
               'z-10 hover:border-[var(--border-strong)]',
-              hub ? 'border-[var(--border-strong)]' : 'border-[var(--border-default)]'
+              hub
+                ? 'border-[rgba(245,165,36,0.3)] shadow-[0_0_0_4px_rgba(245,165,36,0.05),0_12px_40px_-12px_rgba(0,0,0,0.7)]'
+                : 'border-[var(--border-default)] shadow-[var(--shadow-card)]'
             )
       )}
       style={{
@@ -634,29 +867,32 @@ function NodeCard({
         width: rect.w,
         height: rect.h,
         transition: still
-          ? 'border-color 180ms'
-          : `left ${glide}, top ${glide}, width ${glide}, height ${glide}, border-color 180ms`
+          ? 'border-color 180ms, box-shadow 180ms'
+          : `left ${glide}, top ${glide}, width ${glide}, height ${glide}, border-color 180ms, box-shadow 180ms`
       }}
     >
       <header
         className={clsx(
-          'grid shrink-0 select-none items-center gap-2 border-b border-[var(--border-subtle)] bg-n2 pl-2.5 pr-1.5',
+          'pane-head grid shrink-0 select-none items-center gap-2 border-b border-[var(--border-subtle)] pl-2.5 pr-1.5',
           onDragStart && 'cursor-move'
         )}
         // [identity | CLI brand | controls] — equal side columns keep the
         // brand dead-centre and the title can never run under it
-        style={{ height: headerH, gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)' }}
+        style={{
+          height: headerH,
+          gridTemplateColumns: narrow ? 'minmax(0,1fr) auto' : 'minmax(0,1fr) auto minmax(0,1fr)'
+        }}
         onPointerDown={onDragStart ? (e) => onDragStart(node, e) : undefined}
         onDoubleClick={() => !hub && useOrch.getState().setExpanded(expanded ? null : node.id)}
         title={onDragStart ? 'Drag to move · double-click to focus' : undefined}
       >
         <div className="flex min-w-0 items-center gap-1.5">
         {hub ? (
-          <span className="shrink-0 rounded border border-[rgba(245,165,36,0.35)] bg-[var(--color-accent-subtle)] px-1.5 text-[10.5px] font-semibold leading-4 tracking-[0.04em] text-accent uppercase">
+          <span className="shrink-0 rounded-md border border-[rgba(245,165,36,0.35)] bg-[linear-gradient(180deg,rgba(245,165,36,0.18),rgba(245,165,36,0.08))] px-1.5 text-[10px] font-semibold leading-[18px] tracking-[0.06em] text-accent uppercase">
             Orchestrator
           </span>
         ) : (
-          <span className="tnum shrink-0 rounded bg-n4 px-1 font-mono text-[10px] leading-4 text-t3">
+          <span className="tnum shrink-0 rounded-md bg-n4 px-1.5 font-mono text-[10px] leading-[18px] text-t3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
             #{index}
           </span>
         )}
@@ -666,18 +902,20 @@ function NodeCard({
           title={meta.label}
         />
         <span
-          className={clsx('min-w-0 truncate leading-none text-[12px]', hub ? 'text-t1' : 'text-t2')}
+          className={clsx('min-w-0 truncate leading-none text-[12px] font-medium', hub ? 'text-t1' : 'text-t2')}
           title={node.task ? `${node.title ?? ''} — ${node.task}` : undefined}
         >
-          {hub ? net.name : node.title}
-          {!hub && node.task && <span className="text-t4"> — {node.task}</span>}
+          {hub ? networkLabel(net) : node.title}
+          {!hub && node.task && <span className="font-normal text-t4"> — {node.task}</span>}
         </span>
         </div>
 
         {/* which agent CLI runs here — centred on the card */}
-        <span className="pointer-events-none flex justify-center">
-          <CliBrandBadge command={effectiveCommand(node)} />
-        </span>
+        {!narrow && (
+          <span className="pointer-events-none flex justify-center">
+            <CliBrandBadge command={effectiveCommand(node)} />
+          </span>
+        )}
 
         <div
           className={clsx(
@@ -789,7 +1027,7 @@ function HubButton({
         uiTap()
         onClick()
       }}
-      className="flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px] text-t3 transition-colors hover:bg-n4 hover:text-t1 disabled:pointer-events-none disabled:opacity-40"
+      className="flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-t3 transition-colors hover:bg-n4 hover:text-t1 disabled:pointer-events-none disabled:opacity-40"
     >
       {icon}
       {label}
@@ -841,8 +1079,7 @@ function usePopover() {
   return { open, setOpen, ref }
 }
 
-const popoverCls =
-  'absolute right-0 top-9 z-50 w-[340px] rounded-lg border border-[var(--border-default)] bg-popover p-3 shadow-[0_16px_48px_rgba(0,0,0,0.55)]'
+const popoverCls = 'pop-surface pop-in absolute right-0 top-9 z-50 w-[340px] rounded-xl p-3.5'
 
 function SpawnButton({ net }: { net: OrchNetwork }) {
   const { open, setOpen, ref } = usePopover()
@@ -871,7 +1108,7 @@ function SpawnButton({ net }: { net: OrchNetwork }) {
         type="button"
         disabled={full}
         onClick={() => setOpen(!open)}
-        className="flex h-7 items-center gap-1.5 rounded-md border border-[rgba(245,165,36,0.35)] bg-[var(--color-accent-subtle)] px-2.5 text-[11.5px] font-medium text-accent transition-colors hover:bg-[rgba(245,165,36,0.18)] disabled:opacity-40"
+        className="btn-accent-soft flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium disabled:opacity-40"
       >
         <Plus size={12} />
         Subagent
@@ -970,7 +1207,7 @@ function ConnectButton({ net }: { net: OrchNetwork }) {
         type="button"
         onClick={() => setOpen(!open)}
         title="How the orchestrator drives this network (tnet · MCP · HTTP)"
-        className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-n3 px-2.5 text-[11.5px] text-t2 transition-colors hover:bg-n4 hover:text-t1"
+        className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n3 px-2.5 text-[12px] font-medium text-t2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1"
       >
         <Cable size={12} />
         Connect
@@ -982,7 +1219,7 @@ function ConnectButton({ net }: { net: OrchNetwork }) {
             The orchestrator terminal already carries <code className="text-t2">TERRARIUM_SID</code>,{' '}
             <code className="text-t2">TERRARIUM_NET</code> and{' '}
             <code className="text-t2">TERRARIUM_WS_CMD</code> — every call below lands in{' '}
-            <b className="text-t2">{net.name}</b>.
+            <b className="text-t2">{networkLabel(net)}</b>.
           </p>
 
           <p className="mb-1 text-[11px] font-medium text-t2">tnet CLI {host ? '(on PATH)' : ''}</p>

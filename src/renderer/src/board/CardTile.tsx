@@ -117,18 +117,18 @@ export function CardTile(p: CardTileProps) {
         p.onEdit(card)
       }}
       className={clsx(
-        'group relative cursor-default overflow-hidden rounded-lg border bg-base py-2 pl-3 pr-2.5 transition-[border-color,background-color,opacity] duration-100',
+        'group relative cursor-default overflow-hidden rounded-[10px] border py-2.5 pr-2.5 pl-3 shadow-[var(--shadow-card)] transition-[border-color,background-color,opacity,transform] duration-150',
         p.dragging && 'opacity-40',
         p.selected
-          ? 'border-[rgba(245,165,36,0.45)] bg-[color-mix(in_srgb,var(--color-accent)_5%,var(--color-base))]'
-          : 'border-[var(--border-subtle)] hover:border-[var(--border-default)]',
-        p.cursor && 'ring-1 ring-[rgba(245,165,36,0.55)]'
+          ? 'border-[rgba(245,165,36,0.45)] bg-[color-mix(in_srgb,var(--color-accent)_6%,var(--color-raised))]'
+          : 'card-hover border-[var(--border-default)] bg-raised hover:bg-[color-mix(in_srgb,white_1.5%,var(--color-raised))]',
+        p.cursor && 'ring-focus'
       )}
     >
       {/* priority stripe */}
       <span
         aria-hidden
-        className="absolute inset-y-0 left-0 w-[2px]"
+        className="absolute top-2 bottom-2 left-0 w-[2.5px] rounded-r-full"
         style={{ background: PRIORITY_STRIPE[card.priority] }}
       />
 
@@ -140,10 +140,10 @@ export function CardTile(p: CardTileProps) {
           }}
           title={done ? 'Reopen' : 'Mark done (x)'}
           className={clsx(
-            'mt-[1px] flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+            'mt-[1.5px] flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors',
             done
-              ? 'border-[var(--color-done)] bg-[var(--color-done)] text-[var(--color-canvas)]'
-              : 'border-[var(--border-strong)] text-transparent hover:border-[var(--color-done)] hover:text-[var(--color-done)]'
+              ? 'border-[var(--color-done)] bg-[var(--color-done)] text-[var(--color-canvas)] shadow-[0_0_8px_rgba(70,167,88,0.35)]'
+              : 'border-n8 text-transparent hover:border-[var(--color-done)] hover:bg-[rgba(70,167,88,0.1)] hover:text-[var(--color-done)]'
           )}
         >
           <Check size={9} strokeWidth={3} />
@@ -161,7 +161,7 @@ export function CardTile(p: CardTileProps) {
               if (e.key === 'Enter') p.onRename(card, titleDraft)
               if (e.key === 'Escape') p.onRename(card, null)
             }}
-            className="min-w-0 flex-1 rounded border border-[var(--border-strong)] bg-n2 px-1 text-[12px] leading-snug text-t1 outline-none"
+            className="min-w-0 flex-1 rounded-md border border-[rgba(245,165,36,0.45)] bg-n2 px-1.5 text-[12.5px] leading-snug text-t1 outline-none"
           />
         ) : (
           <p
@@ -171,8 +171,8 @@ export function CardTile(p: CardTileProps) {
             }}
             title="Double-click to rename"
             className={clsx(
-              'min-w-0 flex-1 break-words text-[12px] leading-snug',
-              done ? 'text-t3 line-through decoration-[var(--border-strong)]' : 'text-t1'
+              'min-w-0 flex-1 text-[12.5px] leading-[18px] font-medium tracking-[-0.005em] break-words',
+              done ? 'font-normal text-t3 line-through decoration-[var(--border-strong)]' : 'text-t1'
             )}
           >
             {card.title}
@@ -186,23 +186,23 @@ export function CardTile(p: CardTileProps) {
               useApp.getState().openReview(run.id)
             }}
             title="Open the diff for review"
-            className="shrink-0 rounded-full bg-accent-subtle px-1.5 py-px text-[9.5px] font-medium leading-relaxed text-accent transition-colors hover:bg-[color-mix(in_srgb,var(--color-accent)_22%,transparent)]"
+            className="shrink-0 rounded-full bg-accent-subtle px-1.5 py-px text-[9.5px] leading-relaxed font-semibold tracking-wide text-accent uppercase ring-1 ring-[rgba(245,165,36,0.25)] ring-inset transition-colors hover:bg-[color-mix(in_srgb,var(--color-accent)_22%,transparent)]"
           >
             diff
           </button>
         )}
       </div>
 
-      {run?.summary && <p className="mt-1 truncate pl-[22px] text-[10.5px] text-t3">{run.summary}</p>}
+      {run?.summary && <p className="mt-1 truncate pl-[23px] text-[11px] text-t3">{run.summary}</p>}
 
       {/* meta row */}
-      <div className="mt-1.5 flex items-center gap-1.5 pl-[22px]">
+      <div className="mt-2 flex min-h-5 items-center gap-1.5 pl-[23px]">
         {terminalBound ? (
           <span
             className="flex min-w-0 shrink items-center gap-1 text-[10.5px] text-t3"
             title={worker?.name ?? card.assigneeId ?? 'terminal'}
           >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-n5 text-t3">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-n5 text-t2 ring-1 ring-[var(--border-subtle)] ring-inset">
               <Terminal size={9} />
             </span>
             {worker && <StatusDot status={WORKER_DOT[worker.status]} size={5} />}
@@ -210,7 +210,7 @@ export function CardTile(p: CardTileProps) {
           </span>
         ) : isMe ? (
           <span className="flex shrink-0 items-center gap-1 text-[10.5px] text-t3" title="You">
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent-subtle text-accent">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent-subtle text-accent ring-1 ring-[rgba(245,165,36,0.25)] ring-inset">
               <User size={9} />
             </span>
             me
@@ -218,7 +218,7 @@ export function CardTile(p: CardTileProps) {
         ) : agent ? (
           <span className="flex min-w-0 shrink items-center gap-1 text-[10.5px] text-t3">
             <span
-              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white"
+              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
               style={{ background: `hsl(${agent.hue} 45% 42%)` }}
             >
               {agent.name[0]}
@@ -241,12 +241,12 @@ export function CardTile(p: CardTileProps) {
         {card.dueAt != null && (
           <span
             className={clsx(
-              'flex shrink-0 items-center gap-0.5 rounded px-1 text-[10px]',
+              'flex h-[18px] shrink-0 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium',
               due === 'overdue'
                 ? 'bg-[rgba(229,72,77,0.12)] text-[var(--color-needs)]'
                 : due === 'today'
                   ? 'bg-accent-subtle text-accent'
-                  : 'text-t4'
+                  : 'bg-n4 text-t3'
             )}
             title={new Date(card.dueAt).toLocaleString()}
           >
@@ -275,7 +275,7 @@ export function CardTile(p: CardTileProps) {
               void getEngine().moveCard(card.id, 'done')
             }}
             title="Approve — mark complete"
-            className="flex shrink-0 items-center gap-1 rounded-md border border-[rgba(70,167,88,0.4)] px-1.5 py-0.5 text-[10px] text-[var(--color-done)] transition-colors hover:bg-[rgba(70,167,88,0.12)]"
+            className="flex h-5 shrink-0 items-center gap-1 rounded-md border border-[rgba(70,167,88,0.35)] bg-[rgba(70,167,88,0.07)] px-1.5 text-[10px] font-medium text-[var(--color-done)] transition-colors hover:border-[rgba(70,167,88,0.55)] hover:bg-[rgba(70,167,88,0.14)]"
           >
             <Check size={9} /> approve
           </button>
@@ -290,7 +290,7 @@ export function CardTile(p: CardTileProps) {
             }}
             title={card.status === 'doing' ? 'Message this terminal' : 'Send a follow-up — reopens the task'}
             className={clsx(
-              'shrink-0 rounded-md p-1 text-t4 transition-colors hover:bg-n4 hover:text-t2',
+              'flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n4 hover:text-t1',
               (nudgeOpen || reviewOpen) && 'bg-n4 text-t2'
             )}
           >
@@ -304,7 +304,7 @@ export function CardTile(p: CardTileProps) {
             p.onEdit(card)
           }}
           title="Edit (e)"
-          className="shrink-0 rounded-md p-1 text-t4 opacity-0 transition-opacity hover:bg-n4 hover:text-t2 group-hover:opacity-100"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-t4 opacity-0 transition-[opacity,background-color,color] group-hover:opacity-100 hover:bg-n4 hover:text-t1"
         >
           <Pencil size={10} />
         </button>
@@ -349,7 +349,7 @@ function FollowUp({
   placeholder: string
 }) {
   return (
-    <div className="mt-1.5 flex items-center gap-1.5 pl-[22px]" onClick={(e) => e.stopPropagation()}>
+    <div className="mt-2 flex items-center gap-1.5 pl-[23px]" onClick={(e) => e.stopPropagation()}>
       <input
         autoFocus
         value={value}
@@ -360,15 +360,15 @@ function FollowUp({
           if (e.key === 'Escape') onCancel()
         }}
         placeholder={placeholder}
-        className="flex-1 rounded-md border border-[var(--border-default)] bg-n2 px-2 py-1 text-[11px] text-t1 outline-none placeholder:text-t4 focus:border-[var(--border-strong)]"
+        className="h-7 min-w-0 flex-1 rounded-lg border border-[var(--border-default)] bg-n1/70 px-2.5 text-[11.5px] text-t1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)] outline-none placeholder:text-t4 focus:border-[rgba(245,165,36,0.4)]"
       />
       <button
         onClick={onSend}
         disabled={!value.trim()}
         title="Send"
-        className="rounded-md border border-[var(--border-default)] p-1 text-t3 transition-colors hover:border-[var(--border-strong)] hover:text-t1 disabled:opacity-40"
+        className="btn-accent-soft flex h-7 w-7 shrink-0 items-center justify-center rounded-lg disabled:pointer-events-none disabled:opacity-40"
       >
-        <Send size={10} />
+        <Send size={11} />
       </button>
     </div>
   )

@@ -35,10 +35,10 @@ export function SaveButton() {
       onClick={handleSave}
       title={saved ? 'State saved!' : 'Save current workspace and office state (Ctrl+S)'}
       className={clsx(
-        'no-drag flex h-6 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150 select-none',
+        'no-drag flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] font-medium transition-all duration-150 select-none',
         saved
           ? 'border border-[var(--color-done)] bg-[color-mix(in_srgb,var(--color-done)_16%,transparent)] text-[var(--color-done)]'
-          : 'border border-[var(--border-default)] bg-n2 text-t3 hover:border-[var(--border-strong)] hover:text-t1 active:scale-[0.98]'
+          : 'border border-transparent text-t3 hover:bg-n4 hover:text-t1 active:scale-[0.98]'
       )}
     >
       {saved ? (
@@ -47,7 +47,7 @@ export function SaveButton() {
         <Save size={13} strokeWidth={1.8} className="shrink-0" />
       )}
       <span>{saved ? 'Saved' : 'Save'}</span>
-      {!saved && <span className="kbd ml-0.5 text-[10px] text-t4">Ctrl S</span>}
+      
     </button>
   )
 }

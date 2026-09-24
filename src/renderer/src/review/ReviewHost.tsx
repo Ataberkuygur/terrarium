@@ -91,7 +91,7 @@ export function ReviewHost() {
         <div key="review-host" className="fixed inset-0 z-50 flex items-center justify-center">
           {/* backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/60 backdrop-blur-[3px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -100,7 +100,7 @@ export function ReviewHost() {
           />
           {/* glass panel */}
           <motion.div
-            className="relative h-[85vh] w-[min(1100px,90vw)] overflow-hidden rounded-xl border border-[var(--border-default)] bg-popover/85 shadow-lg-dark backdrop-blur-xl"
+            className="pop-surface relative h-[85vh] w-[min(1100px,90vw)] overflow-hidden rounded-2xl"
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 8 }}

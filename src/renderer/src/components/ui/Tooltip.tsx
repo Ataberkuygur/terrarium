@@ -40,7 +40,7 @@ export function Tooltip({ content, side = 'top', children, className }: TooltipP
       <span
         role="tooltip"
         className={cx(
-          'pointer-events-none absolute z-50 scale-95 rounded-md border border-[var(--border-default)] bg-popover px-2 py-1 text-[11.5px] whitespace-nowrap text-t1 opacity-0 shadow-md-dark transition-[opacity,scale] duration-100 group-hover/tt:scale-100 group-hover/tt:opacity-100 group-hover/tt:delay-150 group-focus-within/tt:scale-100 group-focus-within/tt:opacity-100 group-focus-within/tt:delay-150',
+          'pointer-events-none absolute z-50 scale-95 rounded-lg border border-[var(--border-default)] bg-popover px-2 py-1 text-[11.5px] font-medium whitespace-nowrap text-t1 opacity-0 shadow-[var(--shadow-pop)] transition-[opacity,scale] duration-100 group-hover/tt:scale-100 group-hover/tt:opacity-100 group-hover/tt:delay-150 group-focus-within/tt:scale-100 group-focus-within/tt:opacity-100 group-focus-within/tt:delay-150',
           POSITIONS[side]
         )}
       >
