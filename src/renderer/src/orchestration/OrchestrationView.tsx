@@ -49,6 +49,8 @@ import {
   useOrch,
   effectiveCommand,
   networkLabel,
+  networkHoverTitle,
+  subscribeSessionNames,
   writeToNode,
   type NodeStatus,
   type OrchLayout,
@@ -273,6 +275,10 @@ function NetworkTab({ net, active }: { net: OrchNetwork; active: boolean }) {
     return () => clearTimeout(id)
   }, [armed])
   const busy = useNetBusy(net)
+  // native tooltip — shows after a hover pause
+  const hoverTitle = useSyncExternalStore(subscribeSessionNames, () =>
+    networkHoverTitle(net, `Double-click to ${net.topic ? 'change' : 'set'} the topic`)
+  )
 
   return (
     <div
@@ -284,7 +290,7 @@ function NetworkTab({ net, active }: { net: OrchNetwork; active: boolean }) {
       )}
       onClick={() => useOrch.getState().setActive(net.id)}
       onDoubleClick={() => setEditing(true)}
-      title={`${networkLabel(net)}\nDouble-click to ${net.topic ? 'change' : 'set'} the topic`}
+      title={hoverTitle}
     >
       <span
         className={clsx('h-1.5 w-1.5 shrink-0 rounded-full', busy && 'status-pulse')}

@@ -12,7 +12,8 @@ import { commandSessionId, type PaneAction } from '../lib/panes'
 import {
   statusVersionSnapshot,
   focusOrchestrationNode,
-  networkLabel,
+  networkHoverTitle,
+  subscribeSessionNames,
   nodeStatus,
   effectiveCommand,
   subscribeStatus,
@@ -122,10 +123,11 @@ function NetworkBlock({
   expandedId: string | null
   row: (node: OrchNode, label: string, hub: boolean, current: boolean, task?: string) => React.ReactNode
 }) {
+  const hoverTitle = useSyncExternalStore(subscribeSessionNames, () => networkHoverTitle(net))
   return (
     <div className="mb-1">
-      {/* network label — "Web 1: Senior loop" */}
-      <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-1 select-none" title={networkLabel(net)}>
+      {/* network label — "Web 1: Senior loop"; hover adds the session */}
+      <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-1 select-none" title={hoverTitle}>
         <span className="min-w-0 truncate text-[11px]">
           <span className="font-semibold text-t2">
             {net.name}

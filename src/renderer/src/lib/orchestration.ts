@@ -866,6 +866,7 @@ function track(sid: string, shellBound?: boolean): Track | null {
   tracks.set(sid, t)
   t.unsubs.push(
     pty.onData(sid, (d) => {
+      scanSessionTitle(sid, d)
       t.lastOutAt = Date.now()
       t.exited = false
       // chunks that land while the shadow is seeding are held, not
@@ -886,7 +887,61 @@ function track(sid: string, shellBound?: boolean): Track | null {
     })
   )
   if (t.shellBound) void ensureShadow(t)
+  // an idle CLI set its title long ago — find it in the supervisor's ring
+  void pty
+    .readTail?.(sid, 256_000)
+    .then((tail) => {
+      if (tracks.get(sid) === t && !sessionNames.has(sid)) scanSessionTitle(sid, tail)
+    })
+    .catch(() => undefined)
   return t
+}
+
+// ── session names ─────────────────────────────────────────────────────
+// A CLI's window title (OSC 0/2) is its session name — claude shows the
+// auto-generated or /rename'd name behind a spinner glyph. Surfaced on
+// hover so a network tab says which CLI session it is bound to.
+const OSC_TITLE_RE = /\x1b\][02];([^\x07\x1b]*)(?:\x07|\x1b\\)/g
+/** Titles that name the program, not the session. */
+const GENERIC_TITLE_RE = /^(claude( code)?|devin|codex|.*\.exe|.*[\\/].*)$/i
+const sessionNames = new Map<string, string>()
+const sessionNameSubs = new Set<() => void>()
+
+function scanSessionTitle(sid: string, data: string): void {
+  if (!data.includes('\x1b]')) return
+  let raw: string | undefined
+  for (const m of data.matchAll(OSC_TITLE_RE)) raw = m[1]
+  if (raw === undefined) return
+  // "✳ name" / "◐ name" / "⠂ name" — the glyph animates, the name doesn't
+  const name = raw.replace(/^[^\p{L}\p{N}]+\s+/u, '').trim().slice(0, 120)
+  if (!name || GENERIC_TITLE_RE.test(name) || sessionNames.get(sid) === name) return
+  sessionNames.set(sid, name)
+  sessionNameSubs.forEach((cb) => cb())
+}
+
+export function subscribeSessionNames(cb: () => void): () => void {
+  sessionNameSubs.add(cb)
+  return () => sessionNameSubs.delete(cb)
+}
+
+/** Session name of a node's CLI (its window title), null = not known yet. */
+export function sessionNameOf(sid: string): string | null {
+  return sessionNames.get(sid) ?? null
+}
+
+/** Hover text for a network: label, then the orchestrator's session name + id. */
+export function networkHoverTitle(net: OrchNetwork, extra?: string): string {
+  const sid = commandSessionId(net.orchestrator)
+  const name = sessionNameOf(sid)
+  const id = net.orchestrator.resume?.id
+  return [
+    networkLabel(net),
+    name ? `Session: ${name}` : null,
+    id ? `ID: ${id}` : null,
+    extra ?? null
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 /** Seed the shadow screen from the supervisor's ring, then keep it live. */
@@ -947,6 +1002,7 @@ function untrack(sid: string): void {
   const t = tracks.get(sid)
   if (!t) return
   tracks.delete(sid)
+  sessionNames.delete(sid)
   t.unsubs.forEach((u) => u())
   clearTimeout(t.cliTimer)
   t.shadow?.dispose()
