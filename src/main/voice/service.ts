@@ -2,20 +2,22 @@
 // Spawns and manages the Python-based Whisper voice-to-terminal process.
 // Detects existing running instances to avoid mutex collisions.
 
-import { type ChildProcess, spawn, exec } from 'node:child_process'
+import { type ChildProcess, spawn, execFile } from 'node:child_process'
 import { join } from 'node:path'
-import { stat, unlink } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { stat, unlink, writeFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import type { VoiceStatus } from '@shared/ipc'
 import { checkDependencies, findPython, installDependencies, syncRuntimeFiles } from './installer'
 
-const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
 
 export class VoiceService {
   private child: ChildProcess | null = null
   private voiceDir: string
   private bundledDir: string
   private status: VoiceStatus = {
+    enabled: true,
     ready: false,
     running: false,
     model: 'large-v3-turbo',
@@ -28,6 +30,35 @@ export class VoiceService {
     this.voiceDir = voiceDir
     this.bundledDir = bundledDir
     this.onStatusChange = onStatusChange
+    this.status.enabled = !existsSync(this.disabledMarker())
+  }
+
+  /** Present = the user switched the engine off; survives app restarts. */
+  private disabledMarker(): string {
+    return join(this.voiceDir, 'disabled')
+  }
+
+  isEnabled(): boolean {
+    return this.status.enabled
+  }
+
+  /**
+   * The F8 switch. Off stops every instance of our engine (including one a
+   * previous app run left detached) and frees the ~4 GB the loaded Whisper
+   * model holds; on spawns it again.
+   */
+  async setEnabled(on: boolean): Promise<void> {
+    if (on) {
+      await unlink(this.disabledMarker()).catch(() => {})
+      this.updateStatus({ enabled: true, error: undefined })
+      await this.start()
+      return
+    }
+    await writeFile(this.disabledMarker(), '').catch(() => {})
+    this.updateStatus({ enabled: false })
+    this.stop()
+    await this.killStaleInstances()
+    this.updateStatus({ ready: false, running: false })
   }
 
   getStatus(): VoiceStatus {
@@ -55,10 +86,19 @@ export class VoiceService {
    * drop the stale heartbeat so the fresh spawn isn't mistaken for dead. */
   private async killStaleInstances(): Promise<void> {
     await unlink(join(this.voiceDir, 'heartbeat')).catch(() => {})
-    const target = join(this.voiceDir, 'main.py')
+    // WQL string literals escape backslashes — an unescaped Windows path
+    // makes the whole filter invalid and nothing matches
+    const target = join(this.voiceDir, 'main.py').replace(/\\/g, '\\\\').replace(/'/g, "''")
     try {
-      await execAsync(
-        `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"CommandLine like '%${target}%'\\" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`
+      await execFileAsync(
+        'powershell',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          `Get-CimInstance Win32_Process -Filter "CommandLine like '%${target}%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`
+        ],
+        { windowsHide: true, timeout: 20_000 }
       )
     } catch {
       // best-effort cleanup — spawn proceeds either way
@@ -67,6 +107,8 @@ export class VoiceService {
 
   /** Initialize installer, dependencies, and start engine. */
   async start(): Promise<boolean> {
+    if (!this.status.enabled) return false
+
     // 1. Sync runtime files into ~/.terrarium/voice
     syncRuntimeFiles(this.bundledDir, this.voiceDir)
 
@@ -102,7 +144,8 @@ export class VoiceService {
       }
     }
 
-    // 5. Spawn background engine
+    // 5. Spawn background engine (unless switched off while deps were checked)
+    if (!this.status.enabled) return false
     const mainScript = join(this.voiceDir, 'main.py')
     const pythonw = py.executable.replace(/python\.exe$/i, 'pythonw.exe')
 

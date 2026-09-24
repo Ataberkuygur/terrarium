@@ -181,9 +181,10 @@ async function devinSessionForPid(pid: number, since: number): Promise<{ id: str
            FROM sessions WHERE id IN (${ids.map(() => '?').join(',')})`
         )
         .all(...ids) as { id: string; cwd: string | null; created: number; at: number }[]
-      // pids get reused — only a session that started with this process
+      // pids get reused — only a session this process started or touched
+      // (a `devin -r <id>` resume keeps the old created_at)
       const fresh = rows
-        .filter((r) => r.created * 1000 >= since - DEVIN_SINCE_SLACK_MS)
+        .filter((r) => Math.max(r.created, r.at ?? 0) * 1000 >= since - DEVIN_SINCE_SLACK_MS)
         .sort((a, b) => b.at - a.at)
       const pick = fresh[0]
       return pick ? { id: pick.id, cwd: pick.cwd } : null

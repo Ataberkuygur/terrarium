@@ -36,6 +36,12 @@ export interface NodeResume {
    * purpose is not brought back — only one the machine took down.
    */
   active: boolean
+  /**
+   * Put to sleep (ms) — Terrarium killed the idle CLI to free its memory.
+   * The card holds off respawning until woken (click / tnet send), and
+   * then it resumes this session.
+   */
+  slept?: number
 }
 
 export function isResumableCli(cli: string | null | undefined): cli is ResumableCli {

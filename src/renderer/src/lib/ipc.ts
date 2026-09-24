@@ -6,6 +6,7 @@ import type { CliSessionEntry } from '@shared/cli-sessions'
 import type { CliBinding } from '@shared/cli-resume'
 import type { JevKeyStatus, JevRequest, JevResult } from '@shared/jev'
 import type { UpdateStatus } from '@shared/updater'
+import type { BrowserMcpStatus } from '@shared/browser-mcp'
 
 declare global {
   interface Window {
@@ -40,6 +41,11 @@ declare global {
       } | null>
       cliSessions?: (cli: string, cwd: string) => Promise<CliSessionEntry[]>
       suggestNetTopic?: (sessionId: string, agentTitles: string[]) => Promise<string | null>
+      /** Devin's browser MCP servers switch (absent until main/preload restart). */
+      browserMcp?: {
+        status: () => Promise<BrowserMcpStatus>
+        set: (on: boolean) => Promise<BrowserMcpStatus>
+      }
       /** Agent CLI under each shell pid (absent until main/preload restart). */
       cliProcesses?: (pids: number[]) => Promise<Record<number, string | null>>
       /** pty root pid → resumable CLI session (absent until main/preload restart). */

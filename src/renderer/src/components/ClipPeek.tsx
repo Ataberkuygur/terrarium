@@ -9,11 +9,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, Copy, FolderOpen, ImageIcon, Paperclip, X } from 'lucide-react'
+import { Check, Copy, FolderOpen, ImageIcon, Paperclip, SquareTerminal, X } from 'lucide-react'
 import type { TaskCard } from '@shared/types'
 import { spawnPop } from '../lib/sfx'
 import { getEngine } from '../lib/ipc'
 import { useApp } from '../lib/store'
+import { insertClip, setClipDrag, useClipTarget } from '../lib/clip-target'
+import { terminalLabel } from './ClipboardPanel'
 import { Button } from './ui'
 
 /** payload pushed by main on `clipboard:image` */
@@ -124,6 +126,14 @@ export function ClipPeek() {
     setVisible(false)
   }
 
+  // ── attach-to-terminal ──
+  // Goes to the terminal the user last clicked into (lib/clip-target), not
+  // a guess; with none focused yet the button says so and stays disabled.
+  const target = useClipTarget()
+  const attachToTerminal = () => {
+    if (clip && insertClip({ kind: 'image', path: clip.path })) setVisible(false)
+  }
+
   const openCards = cards.filter((c) => c.status !== 'done')
   const agentName = (id: string | null) => agents.find((a) => a.id === id)?.name
 
@@ -171,9 +181,10 @@ export function ClipPeek() {
             <img
               src={clip.dataUrl}
               alt={`Clipboard capture ${clip.width}×${clip.height}`}
-              title={clip.path}
-              draggable={false}
-              className="h-auto max-h-[280px] w-full rounded-lg border border-[var(--border-subtle)] bg-sunken object-contain"
+              title={`${clip.path}\nSürükle → istediğin terminale bırak`}
+              draggable
+              onDragStart={(e) => setClipDrag(e, { kind: 'image', path: clip.path })}
+              className="h-auto max-h-[280px] w-full cursor-grab rounded-lg border border-[var(--border-subtle)] bg-sunken object-contain active:cursor-grabbing"
             />
           </div>
 
@@ -221,6 +232,19 @@ export function ClipPeek() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-1.5 border-t border-[var(--border-subtle)] px-2.5 py-2">
+              <Button
+                variant="accent"
+                size="md"
+                onClick={attachToTerminal}
+                disabled={!target}
+                title={target ? undefined : 'Önce bir terminale tıkla — ya da resmi terminale sürükle'}
+                className="col-span-2 w-full min-w-0"
+              >
+                <SquareTerminal size={13} />
+                <span className="truncate">
+                  {target ? `Terminale ekle · ${terminalLabel(target)}` : 'Terminal seçili değil'}
+                </span>
+              </Button>
               <Button variant="secondary" size="md" onClick={copyPath}>
                 {copied ? <Check size={13} /> : <Copy size={13} />}
                 {copied ? 'Copied' : 'Copy path'}
@@ -236,7 +260,7 @@ export function ClipPeek() {
                 className="col-span-2 w-full"
               >
                 <Paperclip size={13} />
-                Attach to card…
+                Karta ekle…
               </Button>
             </div>
           )}

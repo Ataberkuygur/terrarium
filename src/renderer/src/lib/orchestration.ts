@@ -246,7 +246,8 @@ function normResume(v: unknown): NodeResume | undefined {
     pid: num(r.pid),
     since: num(r.since),
     cwd: str(r.cwd),
-    active: r.active === true
+    active: r.active === true,
+    slept: num(r.slept)
   }
 }
 
@@ -648,6 +649,8 @@ const SHADOW_SCROLLBACK = 1500
 
 interface Track {
   sid: string
+  /** When tracking began — idle clock for a CLI that hasn't printed since. */
+  trackedAt: number
   lastOutAt: number
   lastInAt: number
   exited: boolean
@@ -849,6 +852,7 @@ function track(sid: string, shellBound?: boolean): Track | null {
   if (!pty) return null
   const t: Track = {
     sid,
+    trackedAt: Date.now(),
     lastOutAt: 0,
     lastInAt: 0,
     exited: false,
@@ -1060,7 +1064,8 @@ function sameResume(a: NodeResume | undefined, b: NodeResume | undefined): boole
     a?.pid === b?.pid &&
     a?.since === b?.since &&
     a?.cwd === b?.cwd &&
-    a?.active === b?.active
+    a?.active === b?.active &&
+    a?.slept === b?.slept
   )
 }
 
@@ -1098,6 +1103,8 @@ async function refreshBindings(): Promise<void> {
     const ask: { node: OrchNode; pid: number; since: number }[] = []
     for (const net of useOrch.getState().networks) {
       for (const node of networkNodes(net)) {
+        // asleep on purpose — its exited pty is no news (see sleepNode)
+        if (node.resume?.slept) continue
         const info = byId.get(commandSessionId(node))
         // unknown to the supervisor (fresh after a reboot) or crashed with
         // it: that's exactly the case to resume — leave the memory alone
@@ -1154,7 +1161,8 @@ async function restoreNodes(): Promise<void> {
   const want = useOrch
     .getState()
     .networks.flatMap((net) => networkNodes(net).map((node) => ({ net, node })))
-    .filter(({ node }) => node.resume?.active)
+    // asleep nodes stay down until woken — a restart doesn't wake them
+    .filter(({ node }) => node.resume?.active && !node.resume.slept)
   if (!pty || !want.length) return
   const toSpawn: string[] = []
   try {
@@ -1229,6 +1237,119 @@ async function autoTopics(): Promise<void> {
   }
 }
 
+// ── auto-sleep ────────────────────────────────────────────────────────
+// An idle Devin subagent still holds ~700 MB: the CLI, its ACP child and
+// a private copy of every MCP server. Once it has been quiet for the
+// configured minutes its pty is killed and the node keeps the session:
+// the card shows it asleep and a click (or the next `tnet send`) brings
+// it back with `devin --resume <id>`, in the same conversation. Only a
+// node positively bound to a running devin (refreshBindings) qualifies.
+
+const AUTO_SLEEP_KEY = 'terrarium.autoSleepMin'
+export const AUTO_SLEEP_DEFAULT_MIN = 15
+const AUTO_SLEEP_EVERY_MS = 60_000
+/** Node ids between kill and session lookup — a wake waits for them. */
+const falling = new Set<string>()
+
+/** Minutes of quiet before a Devin node sleeps; 0 = never. */
+export function autoSleepMinutes(): number {
+  try {
+    const raw = localStorage.getItem(AUTO_SLEEP_KEY)
+    if (raw === null) return AUTO_SLEEP_DEFAULT_MIN
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : 0
+  } catch {
+    return AUTO_SLEEP_DEFAULT_MIN
+  }
+}
+
+export function setAutoSleepMinutes(min: number): void {
+  try {
+    localStorage.setItem(AUTO_SLEEP_KEY, String(Math.max(0, Math.round(min))))
+  } catch {
+    /* storage blocked — the default stays */
+  }
+}
+
+function findNode(nodeId: string): { net: OrchNetwork; node: OrchNode } | null {
+  for (const net of useOrch.getState().networks) {
+    for (const node of networkNodes(net)) if (node.id === nodeId) return { net, node }
+  }
+  return null
+}
+
+function sleptNodeBySid(sid: string): OrchNode | null {
+  for (const net of useOrch.getState().networks) {
+    for (const node of networkNodes(net)) {
+      if (node.resume?.slept && commandSessionId(node) === sid) return node
+    }
+  }
+  return null
+}
+
+async function sleepNode(node: OrchNode): Promise<void> {
+  const pty = getPty()
+  const r = node.resume
+  if (!pty || !r?.pid || falling.has(node.id)) return
+  falling.add(node.id)
+  const sid = commandSessionId(node)
+  try {
+    setResumes(new Map([[node.id, { ...r, slept: Date.now() }]]))
+    await pty.kill(sid).catch(() => undefined)
+    // devin locks its session while alive — readable once the process is gone
+    const resolve = window.terrarium?.resolveCliSession
+    let hit: { id: string; cwd: string | null } | null = null
+    for (let i = 0; i < 8 && resolve && !hit; i++) {
+      await sleep(1500)
+      hit = await resolve(r.cli, r.pid, r.since ?? 0).catch(() => null)
+    }
+    const cur = findNode(node.id)?.node.resume
+    if (!cur?.slept) return // woken meanwhile
+    const id = hit?.id ?? cur.id
+    setResumes(
+      new Map([
+        [node.id, { ...cur, id, cwd: hit?.cwd ?? cur.cwd, pid: undefined, active: !!id }]
+      ])
+    )
+    if (!id) console.warn(`[orchestration] ${node.title ?? node.id}: devin session not found — wake starts it fresh`)
+  } finally {
+    falling.delete(node.id)
+  }
+}
+
+/** Bring a sleeping node back in its session; no-op for an awake one. */
+export async function wakeNode(nodeId: string): Promise<void> {
+  while (falling.has(nodeId)) await sleep(300)
+  const hit = findNode(nodeId)
+  if (!hit?.node.resume?.slept) return
+  const { slept: _slept, ...awake } = hit.node.resume
+  setResumes(new Map([[nodeId, awake]]))
+  const fresh = findNode(nodeId)
+  if (!fresh) return
+  const sid = commandSessionId(fresh.node)
+  await preSpawn(fresh.node, fresh.net)
+  // a fresh track: the old one saw the exit and would skip the boot wait
+  untrack(sid)
+  track(sid, isShellCommand(fresh.node.command))
+  bump()
+}
+
+function autoSleep(): void {
+  const min = autoSleepMinutes()
+  if (!min || useOrch.getState().restoring) return
+  const now = Date.now()
+  for (const net of useOrch.getState().networks) {
+    for (const node of networkNodes(net)) {
+      const r = node.resume
+      if (!r?.active || r.cli !== 'devin' || r.slept || !r.pid) continue
+      const t = tracks.get(commandSessionId(node))
+      if (!t || t.exited) continue
+      const last = Math.max(t.lastOutAt, t.lastInAt, t.trackedAt)
+      if (now - last >= min * 60_000) void sleepNode(node)
+    }
+  }
+}
+
 void (async () => {
   await hostReady
   await Promise.race([restoreNodes(), new Promise((r) => setTimeout(r, RESTORE_TIMEOUT_MS))])
@@ -1238,6 +1359,7 @@ void (async () => {
   // after the first binding pass has found the orchestrators' sessions
   setTimeout(() => void autoTopics(), 15_000)
   setInterval(() => void autoTopics(), TOPIC_EVERY_MS)
+  setInterval(autoSleep, AUTO_SLEEP_EVERY_MS)
 })()
 
 export function nodeStatus(sid: string, now = Date.now()): NodeStatus {
@@ -1364,6 +1486,9 @@ export function sendToNode(
   text: string,
   opts: { enter?: boolean; raw?: boolean; budgetMs?: number } = {}
 ): Promise<number> {
+  // a message for a sleeping agent wakes it first (wakeNode clears the flag)
+  const asleep = sleptNodeBySid(sid)
+  if (asleep) return wakeNode(asleep.id).then(() => sendToNode(sid, text, opts))
   const t = tracks.get(sid) ?? track(sid)
   if (!t) return Promise.resolve(writeToNode(sid, text, opts))
   const run = t.queue.then(async () => {
@@ -1511,7 +1636,7 @@ function nodeInfo(net: OrchNetwork, n: OrchNode) {
     // CLI-bound nodes skip screen detection — their command names the CLI
     cli: nodeCli(sid) ?? (isShellCommand(n.command) ? null : cliFromCommandLine(n.command)),
     task: n.task,
-    status: nodeStatus(sid),
+    status: n.resume?.slept ? 'asleep' : nodeStatus(sid),
     session: n.resume?.id ?? null,
     quietSec: io.outAt ? Math.round((Date.now() - io.outAt) / 1000) : null,
     by: n.by

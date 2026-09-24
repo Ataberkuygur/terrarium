@@ -9,6 +9,7 @@ import type { PaneCmdEnvelope, PaneCmdResult } from '../shared/pane-bridge'
 import type { CliSessionEntry } from '../shared/cli-sessions'
 import type { CliBinding } from '../shared/cli-resume'
 import { JEV_IPC, type JevKeyStatus, type JevRequest, type JevResult } from '../shared/jev'
+import { BROWSER_MCP_IPC, type BrowserMcpStatus } from '../shared/browser-mcp'
 import type {
   Agent,
   Engine,
@@ -310,6 +311,11 @@ const api = {
       id: string
       cwd: string | null
     } | null>,
+  /** Settings: Devin's playwright + chrome-devtools MCP servers on/off. */
+  browserMcp: {
+    status: () => ipcRenderer.invoke(BROWSER_MCP_IPC.status) as Promise<BrowserMcpStatus>,
+    set: (on: boolean) => ipcRenderer.invoke(BROWSER_MCP_IPC.set, on) as Promise<BrowserMcpStatus>
+  },
   /** 2–4 word topic from an orchestrator's claude transcript (null = none yet). */
   suggestNetTopic: (sessionId: string, agentTitles: string[]) =>
     ipcRenderer.invoke('net:suggest-topic', sessionId, agentTitles) as Promise<string | null>,
@@ -342,6 +348,25 @@ const api = {
     ) => cb(payload)
     ipcRenderer.on('clipboard:image', handler)
     return () => ipcRenderer.removeListener('clipboard:image', handler)
+  },
+  /** Clipboard panel: saved images + text history (main/clip-history.ts). */
+  clipHistory: {
+    list: () =>
+      ipcRenderer.invoke('clip:list') as Promise<{
+        images: { path: string; at: number }[]
+        texts: { id: string; text: string; at: number }[]
+      }>,
+    thumb: (path: string) =>
+      ipcRenderer.invoke('clip:thumb', path) as Promise<{ dataUrl: string; width: number; height: number } | null>,
+    remove: (kind: 'image' | 'text', id: string) =>
+      ipcRenderer.invoke('clip:remove', { kind, id }) as Promise<boolean>,
+    copy: (kind: 'image' | 'text', id: string) =>
+      ipcRenderer.invoke('clip:copy', { kind, id }) as Promise<boolean>,
+    onText(cb: () => void) {
+      const handler = () => cb()
+      ipcRenderer.on('clipboard:text', handler)
+      return () => ipcRenderer.removeListener('clipboard:text', handler)
+    }
   },
   /** Reveal a file in the OS file manager. */
   showItem: (path: string) => ipcRenderer.invoke('shell:showItem', path),

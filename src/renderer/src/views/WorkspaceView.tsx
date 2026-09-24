@@ -35,6 +35,7 @@ import {
   takeWorkspaceEvent
 } from '../lib/workspace-events'
 import { SessionRail } from '../workspace/SessionRail'
+import { ClipboardButton } from '../components/ClipboardPanel'
 import { LayoutMenu } from '../workspace/LayoutMenu'
 import { paneClose, paneSplit, uiTap } from '../lib/sfx'
 import { setPaneHooks, type WorkspaceSpawnOpts } from '../lib/pane-bridge'
@@ -733,6 +734,7 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
             <OrchestrationTabs />
             <span className="flex-1" />
             <OrchestrationActions />
+            <ClipboardButton />
           </div>
         ) : (
         <div key="grid-tools" className="ws-tools-in flex min-w-0 flex-1 items-center gap-1.5">
@@ -810,6 +812,9 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
         </span>
 
         <span className="flex-1" />
+
+        {/* clipboard history — photos / texts into the focused terminal */}
+        <ClipboardButton />
 
         {/* tidy button on the edge */}
         <button

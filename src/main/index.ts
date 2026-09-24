@@ -17,9 +17,12 @@ import { initAppZoom } from './app-zoom'
 import { listCliSessions } from './cli-sessions'
 import { probeCliProcesses } from './proc-cli'
 import { cliBindings, resolveCliSession } from './cli-binding'
+import { browserMcpStatus, setBrowserMcp } from './browser-mcp'
+import { BROWSER_MCP_IPC } from '@shared/browser-mcp'
 import { startMobileServer, type MobileInfo } from './mobile'
 import { initVoiceService, stopVoiceService } from './voice'
 import { registerJevIpc } from './jev'
+import { clipImageMuted, pollClipboardText, registerClipHistory } from './clip-history'
 import { suggestNetworkTopic } from './net-topic'
 import { initUpdater } from './updater'
 import { migrateDevLocalStorage } from './storage-migration'
@@ -107,6 +110,8 @@ function startClipboardWatch(home: string, send: (channel: string, payload: unkn
     inFlight = true
     try {
       // Electron 44 clipboard is async/W3C-style: has() gates the read.
+      // text history (clipboard panel) rides the same tick
+      await pollClipboardText(send).catch(() => {})
       if (!(await clipboard.has('image/png'))) return
       const items = await clipboard.read()
       const item = items.find((i) => i.types.includes('image/png'))
@@ -117,6 +122,7 @@ function startClipboardWatch(home: string, send: (channel: string, payload: unkn
       const sig = `${buf.length}:${buf.readUInt32LE(0)}:${buf.readUInt32LE(buf.length - 4)}`
       if (sig === lastSig) return
       lastSig = sig
+      if (clipImageMuted()) return // the panel re-copied one of ours
       mkdirSync(dir, { recursive: true })
       const path = join(dir, `clip-${Date.now()}.png`)
       writeFileSync(path, buf)
@@ -486,6 +492,9 @@ async function boot(): Promise<void> {
   ipcMain.handle('cli:resolve-session', (_e, cli: string, pid: number, since: number) =>
     resolveCliSession(cli, pid, since)
   )
+  // Devin's playwright + chrome-devtools MCP servers (Settings toggle, `tnet mcp`)
+  ipcMain.handle(BROWSER_MCP_IPC.status, () => browserMcpStatus())
+  ipcMain.handle(BROWSER_MCP_IPC.set, (_e, on: boolean) => setBrowserMcp(on === true))
   // topic for a network whose orchestrator never ran `tnet topic`
   ipcMain.handle('net:suggest-topic', (_e, sessionId: string, agentTitles: string[]) =>
     typeof sessionId === 'string'
@@ -501,6 +510,7 @@ async function boot(): Promise<void> {
   // already saved under ~/.terrarium/clipboard/. Poll formats cheaply; only
   // read the (potentially large) image when the signature actually changed.
   const appPaths = ensurePaths()
+  registerClipHistory(appPaths.home)
   startClipboardWatch(appPaths.home, broadcast)
 
   // ── voice-to-terminal prompt injection (Whisper large-v3-turbo / F8) ──

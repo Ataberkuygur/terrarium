@@ -9,6 +9,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type DragEvent as ReactDragEvent,
   type MouseEvent as ReactMouseEvent
 } from 'react'
 import { Terminal as XTerm, type ITheme } from '@xterm/xterm'
@@ -30,6 +31,13 @@ import { ClipboardPaste, Copy, Eraser, TextSelect } from 'lucide-react'
 import clsx from 'clsx'
 import type { PtyBridge, PtySpawnOpts } from '../../../shared/pty'
 import { registerScrollbackReader } from '../lib/terminal-classify'
+import {
+  insertClip,
+  isClipDrag,
+  noteTerminalFocus,
+  readClipDrag,
+  registerClipTerminal
+} from '../lib/clip-target'
 import '@xterm/xterm/css/xterm.css'
 import './terminal.css'
 
@@ -1043,6 +1051,51 @@ export function Terminal({
     setBump(readFontBump(sid))
   }, [sid])
 
+  // ── clip target + drop zone (lib/clip-target) ──
+  // Focus marks this pane as where ClipPeek / the clipboard panel attach;
+  // a clip dragged onto it is inserted like an attach would.
+  const [dropHot, setDropHot] = useState(false)
+  const dragDepth = useRef(0)
+  useEffect(() => {
+    const el = hostRef.current
+    if (!el || !sid) return
+    const off = registerClipTerminal(sid, {
+      el,
+      paste: (t) => termRef.current?.paste(t),
+      focus: () => termRef.current?.focus()
+    })
+    const onFocus = () => noteTerminalFocus(sid)
+    el.addEventListener('focusin', onFocus)
+    return () => {
+      off()
+      el.removeEventListener('focusin', onFocus)
+    }
+  }, [sid])
+  const onDragEnter = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!isClipDrag(e.dataTransfer)) return
+    e.preventDefault()
+    dragDepth.current++
+    setDropHot(true)
+  }
+  const onDragOver = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!isClipDrag(e.dataTransfer)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+  const onDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
+    if (!isClipDrag(e.dataTransfer)) return
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (!dragDepth.current) setDropHot(false)
+  }
+  const onDrop = (e: ReactDragEvent<HTMLDivElement>) => {
+    dragDepth.current = 0
+    setDropHot(false)
+    const clip = readClipDrag(e.dataTransfer)
+    if (!clip || !sid) return
+    e.preventDefault()
+    insertClip(clip, sid)
+  }
+
   // Ctrl+wheel zoom — native listener (React's is passive and can't
   // preventDefault); xterm's own scroll stays untouched without the mod.
   useEffect(() => {
@@ -1068,7 +1121,18 @@ export function Terminal({
       className={clsx('terrarium-terminal', ended && 'terrarium-terminal--ended', className)}
       data-session={sid}
       onContextMenu={onContextMenu}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
+      {dropHot && (
+        <div className="pointer-events-none absolute inset-1 z-50 grid place-items-center rounded-lg border-2 border-dashed border-[var(--color-accent)] bg-[rgba(245,165,36,0.07)]">
+          <span className="rounded-full bg-popover/95 px-3 py-1 text-[12px] font-medium text-accent shadow-[var(--shadow-pop)]">
+            Terminale bırak
+          </span>
+        </div>
+      )}
       {menu && (
         <div
           ref={menuRef}

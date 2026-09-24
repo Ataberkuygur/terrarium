@@ -68,11 +68,15 @@ export const VOICE_IPC = {
   status: 'voice:status',
   /** invoke → boolean — trigger manual setup/install */
   setup: 'voice:setup',
+  /** invoke (on: boolean) → VoiceStatus — the same switch as the F8 hotkey */
+  setEnabled: 'voice:set-enabled',
   /** main → renderer push: { status: VoiceStatus } */
   changed: 'voice:changed'
 } as const
 
 export interface VoiceStatus {
+  /** User switch (F8) — off = engine stopped and kept down by the watchdog. */
+  enabled: boolean
   ready: boolean
   running: boolean
   model: string

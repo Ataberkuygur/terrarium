@@ -30,7 +30,11 @@ const HELP = [
   '  tnet rename <agent> <name>               rename a subagent',
   '  tnet topic <words…>                      label this network ("Web 1: <topic>"); no words clears',
   '  tnet info | tnet nets                    this network / all networks',
+  '  tnet mcp [on|off]                        Devin browser MCPs (playwright + chrome-devtools);',
+  '                                           on = loaded by Devin sessions started/resumed after it',
   '',
+  '  An idle Devin subagent is put to sleep after a while (status "asleep") —',
+  '  `tnet send`/`ask` wakes it in the same conversation.',
   '  <agent> = index (1, 2…) | name (prefix ok) | id | "orchestrator"',
   '  --json prints raw JSON. Idle = no output for --idle seconds (default 4).',
   '',
@@ -236,6 +240,17 @@ async function main() {
       return out(await call('net.topic', { topic: pos.join(' ') }), function (r) {
         console.log(r.topic ? 'network → ' + r.label : 'topic cleared (' + r.network + ')')
       })
+    case 'mcp': {
+      const want = (pos.shift() || '').toLowerCase()
+      const args = want === 'on' || want === 'off' ? { on: want === 'on' } : {}
+      return out(await call('mcp.browser', args, 30000), function (r) {
+        if (!r.available) return console.log('browser MCPs are not configured for Devin')
+        console.log(
+          'browser MCPs ' + (r.enabled ? 'ON' : 'OFF') + ' · ' + r.running + ' server process(es) running' +
+            (r.enabled && want === 'on' ? '\nnew or resumed Devin sessions load them' : '')
+        )
+      })
+    }
     default:
       console.error('unknown command: ' + sub + '\n')
       console.log(HELP)

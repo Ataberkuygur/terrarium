@@ -13,6 +13,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { BrowserWindow, ipcMain } from 'electron'
 import { PANE_IPC } from '../shared/ipc'
+import { browserMcpStatus, setBrowserMcp } from './browser-mcp'
 import {
   PANE_BRIDGE_PORT,
   PANE_BRIDGE_PORT_MAX,
@@ -143,6 +144,16 @@ function handleCmd(req: IncomingMessage, res: ServerResponse): void {
       msg = parsed as Record<string, unknown>
     } catch {
       sendJson(res, 400, { ok: false, error: 'body must be a JSON object' })
+      return
+    }
+    // host-level switch, no window involved (agents: `tnet mcp on|off`)
+    if (msg.cmd === 'mcp.browser') {
+      try {
+        const result = typeof msg.on === 'boolean' ? await setBrowserMcp(msg.on) : await browserMcpStatus()
+        sendJson(res, 200, { ok: true, result })
+      } catch (e) {
+        sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
       return
     }
     const win = await hostWindow(msg)

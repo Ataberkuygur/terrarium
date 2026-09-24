@@ -30,6 +30,7 @@ import {
   Waypoints,
   Maximize2,
   Minimize2,
+  Moon,
   Plus,
   Sparkles,
   X,
@@ -51,6 +52,7 @@ import {
   networkLabel,
   networkHoverTitle,
   subscribeSessionNames,
+  wakeNode,
   writeToNode,
   type NodeStatus,
   type OrchLayout,
@@ -882,6 +884,8 @@ function NodeCard({
   const sid = commandSessionId(node)
   // startup resume in flight — mounting now would spawn a fresh CLI
   const restoring = useOrch((s) => s.restoring)
+  // auto-slept (idle devin, memory freed) — no spawn until woken
+  const asleep = !!node.resume?.slept
   const status = useNodeStatus(sid)
   const meta = STATUS_META[status]
   const headerH = hub ? 34 : 30
@@ -1022,12 +1026,35 @@ function NodeCard({
             </div>
           ) : (
             <Terminal
+              // remount on wake: connect() then attaches/spawns at this grid
+              key={asleep ? 'asleep' : 'awake'}
               bridge={getPtyBridge()}
               sessionId={sid}
-              spawnOpts={nodeSpawnOpts(node, net)}
+              spawnOpts={asleep ? undefined : nodeSpawnOpts(node, net)}
               fontSize={13}
               zoom={zoom}
             />
+          )}
+          {asleep && (
+            <button
+              type="button"
+              onClick={() => void wakeNode(node.id)}
+              title="Aynı oturumda devam ettir"
+              className="absolute inset-0 z-10 grid place-items-center bg-[rgba(4,5,7,0.55)] backdrop-blur-[1px] transition-colors hover:bg-[rgba(4,5,7,0.4)]"
+            >
+              <span className="flex flex-col items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-popover px-4 py-2.5 shadow-[var(--shadow-pop)]">
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-t1">
+                  <Moon size={13} className="text-accent" />
+                  Uyuyor
+                </span>
+                <span className="text-[10.5px] text-t4">
+                  {`Boşta kaldığı için ${new Date(node.resume?.slept ?? 0).toLocaleTimeString('tr-TR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}'de uyutuldu · uyandırmak için tıkla`}
+                </span>
+              </span>
+            </button>
           )}
         </ErrorBoundary>
       </div>

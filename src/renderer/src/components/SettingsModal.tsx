@@ -25,8 +25,10 @@ import { createQuizProvider } from '../lib/quiz/llm-provider'
 import { PROVIDER_OPTIONS } from '../quiz/QuizSettingsModal'
 import { uiTap } from '../lib/sfx'
 import clsx from 'clsx'
-import { KeyRound, RefreshCw, ZoomIn } from 'lucide-react'
+import { Globe, KeyRound, Moon, RefreshCw, ZoomIn } from 'lucide-react'
 import type { UpdateStatus } from '@shared/updater'
+import type { BrowserMcpStatus } from '@shared/browser-mcp'
+import { autoSleepMinutes, setAutoSleepMinutes } from '../lib/orchestration'
 import type { JevKeyStatus } from '@shared/jev'
 import {
   APP_ZOOM_MAX,
@@ -187,6 +189,7 @@ export function SettingsModal() {
         <AppearanceSection />
         <UpdateSection />
         <JevSection />
+        <ResourceSection />
 
         <div className="flex min-h-0 max-h-[70vh]">
           {/* ── saved sets ── */}
@@ -725,6 +728,106 @@ function JevSection() {
         {msg && (msg.ok ? <Check size={12} /> : <AlertCircle size={12} />)}
         {msg?.text ?? (fromEnv ? 'Ortam değişkeni öncelikli' : '')}
       </span>
+    </div>
+  )
+}
+
+const segOn =
+  'bg-gradient-to-b from-n5 to-n4 font-medium text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.04)]'
+
+/** Memory savers: idle Devin agents sleep, browser MCPs off by default. */
+function ResourceSection() {
+  const mcp = window.terrarium?.browserMcp
+  const [sleepMin, setSleepMin] = useState(autoSleepMinutes)
+  const [mcpStatus, setMcpStatus] = useState<BrowserMcpStatus | null>(null)
+  const [mcpBusy, setMcpBusy] = useState(false)
+  const sleepOptions = [0, 10, 15, 30, 60]
+
+  useEffect(() => {
+    void mcp?.status().then(setMcpStatus).catch(() => {})
+  }, [mcp])
+
+  const setMcp = async (on: boolean) => {
+    if (!mcp) return
+    setMcpBusy(true)
+    try {
+      setMcpStatus(await mcp.set(on))
+    } finally {
+      setMcpBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col border-b border-[var(--border-subtle)]">
+      <div className="flex items-center gap-3 px-5 pt-3.5 pb-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+          <Moon size={14} />
+        </span>
+        <div className="w-36 shrink-0">
+          <div className="text-[12.5px] font-medium text-t1">Devin otomatik uyku</div>
+          <div className="text-[11px] leading-snug text-t4">Ajan başına ~700 MB</div>
+        </div>
+        <div className="seg-track h-7 shrink-0 gap-0.5">
+          {sleepOptions.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setSleepMin(m)
+                setAutoSleepMinutes(m)
+              }}
+              className={clsx(
+                'tnum h-[22px] rounded-[7px] px-2.5 text-[11.5px] transition-colors',
+                sleepMin === m ? segOn : 'text-t3 hover:text-t1'
+              )}
+            >
+              {m ? `${m} dk` : 'Kapalı'}
+            </button>
+          ))}
+        </div>
+        <span className="min-w-0 flex-1 text-[11px] leading-snug text-t4">
+          {sleepMin
+            ? `${sleepMin} dk boşta kalan Devin kapanır; kartına tıklayınca ya da tnet send ile aynı oturumda uyanır`
+            : 'Boştaki Devin ajanları açık kalır'}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 px-5 pb-3.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+          <Globe size={14} />
+        </span>
+        <div className="w-36 shrink-0">
+          <div className="text-[12.5px] font-medium text-t1">Tarayıcı MCP'leri</div>
+          <div className="text-[11px] leading-snug text-t4">Playwright + Chrome DevTools</div>
+        </div>
+        <div className="seg-track h-7 shrink-0 gap-0.5">
+          {[false, true].map((on) => (
+            <button
+              key={String(on)}
+              type="button"
+              disabled={!mcp || !mcpStatus?.available || mcpBusy}
+              onClick={() => void setMcp(on)}
+              className={clsx(
+                'h-[22px] rounded-[7px] px-2.5 text-[11.5px] transition-colors disabled:opacity-40',
+                mcpStatus?.available && mcpStatus.enabled === on ? segOn : 'text-t3 hover:text-t1'
+              )}
+            >
+              {on ? 'Açık' : 'Kapalı'}
+            </button>
+          ))}
+        </div>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] leading-snug text-t4">
+          {mcpBusy && <Loader2 size={12} className="shrink-0 animate-spin" />}
+          {!mcp
+            ? 'Uygulamayı bir kez yeniden başlatınca aktif olur'
+            : !mcpStatus
+              ? ''
+              : !mcpStatus.available
+                ? "Devin'in MCP ayarında yok"
+                : mcpStatus.enabled
+                  ? `Açık · ${mcpStatus.running} süreç çalışıyor · ajanlar tnet mcp off ile kapatabilir`
+                  : 'Kapalı · yeni ya da uyanan Devin oturumları yüklemez · ajanlar tnet mcp on ile açabilir'}
+        </span>
+      </div>
     </div>
   )
 }

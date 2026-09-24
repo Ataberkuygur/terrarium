@@ -145,6 +145,11 @@ export function paneLeafById(leafId: string): PaneLeaf | null {
   return hooks?.leafById(leafId) ?? null
 }
 
+/** Workspace leaf owning a pty session id (null outside the workspace). */
+export function paneLeafBySid(sid: string): PaneLeaf | null {
+  return hooks?.leafBySid(sid) ?? null
+}
+
 /**
  * Session id of the terminal a browser pane is scoped to. The binding
  * stores a leaf id; the sid folds in that leaf's command binding so it
