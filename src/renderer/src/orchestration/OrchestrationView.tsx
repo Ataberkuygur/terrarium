@@ -579,16 +579,16 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
     const onMove = (ev: PointerEvent) => {
       const px = ev.clientX - host.left
       const py = ev.clientY - host.top
-      const v =
-        // side gutters set the width of ONE column (the band is k of them)
-        side === 'left'
-          ? px / W / Math.max(1, tiles?.count.left ?? 1)
-          : side === 'right'
-            ? (W - px) / W / Math.max(1, tiles?.count.right ?? 1)
-            : side === 'top'
-              ? py / H
-              : (H - py) / H
-      last = clampFractions({ ...last, [side]: v })
+      // opposite bands move together so the orchestrator stays centred;
+      // side gutters set the width of ONE column (a band is k of them)
+      const cols = Math.max(1, tiles?.count.left ?? 0, tiles?.count.right ?? 0)
+      if (side === 'left' || side === 'right') {
+        const v = (side === 'left' ? px : W - px) / W / cols
+        last = clampFractions({ ...last, left: v, right: v })
+      } else {
+        const v = (side === 'top' ? py : H - py) / H
+        last = clampFractions({ ...last, top: v, bottom: v })
+      }
       setFractions(last)
     }
     const onUp = () => {
@@ -608,7 +608,9 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
   }
   /** Double-click a gutter → that band back to its default size. */
   const resetGutter = (side: Side) => {
-    const next = { ...fractions, [side]: DEFAULT_TILE_FRACTIONS[side] }
+    const pair: Side[] = side === 'left' || side === 'right' ? ['left', 'right'] : ['top', 'bottom']
+    const next = { ...fractions }
+    for (const p of pair) next[p] = DEFAULT_TILE_FRACTIONS[p]
     setFractions(next)
     try {
       localStorage.setItem(TILES_KEY, JSON.stringify(next))
@@ -706,7 +708,10 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
           </div>
 
           {tiles && !expanded && (
-            <TileGutters tiles={tiles} W={W} active={gutterDrag} onBegin={beginGutter} onReset={resetGutter} />
+            <>
+              <EmptyBands tiles={tiles} />
+              <TileGutters tiles={tiles} W={W} active={gutterDrag} onBegin={beginGutter} onReset={resetGutter} />
+            </>
           )}
 
           {!expanded && !tiles && (
@@ -742,6 +747,39 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
 }
 
 /**
+ * Reserved bands with no agent yet — quiet dashed slots, so the
+ * orchestrator reads as waiting in the middle rather than floating in a
+ * void. The band the next subagent lands in says so.
+ */
+function EmptyBands({ tiles }: { tiles: TileLayout }) {
+  return (
+    <>
+      {tiles.empty.map((r) => {
+        const next = r.side === tiles.next
+        return (
+          <div
+            key={r.side}
+            aria-hidden
+            className={clsx(
+              'pointer-events-none absolute z-[5] flex items-center justify-center rounded-[10px] border border-dashed transition-colors duration-300',
+              next ? 'border-[rgba(245,165,36,0.22)] bg-[rgba(245,165,36,0.015)]' : 'border-[var(--border-subtle)]'
+            )}
+            style={{ left: r.x, top: r.y, width: r.w, height: r.h }}
+          >
+            {next && (
+              <span className="flex items-center gap-1.5 text-[11px] text-t4">
+                <Plus size={11} />
+                Next subagent
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
+/**
  * Drag handles between the tiled bands and the orchestrator — hairlines
  * that brighten on hover; dragging resizes that band for every network,
  * double-click restores its default.
@@ -764,7 +802,6 @@ function TileGutters({
     <>
       {sides.map((side) => {
         const at = tiles.edges[side]
-        if (at === null) return null
         const vertical = side === 'left' || side === 'right'
         const style: React.CSSProperties = vertical
           ? { left: at - 4, top: tiles.mid.y0, width: 8, height: tiles.mid.y1 - tiles.mid.y0 }

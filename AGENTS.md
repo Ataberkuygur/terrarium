@@ -64,7 +64,8 @@ process):
   double-click, `net.topic` / `tnet topic` / MCP `orchestrator_topic`).
 - Two layouts (`useOrch.layout`, toolbar switch): **Canvas** (pan/zoom web,
   `layout.ts` slots) and **Workspace** (`tileNetwork` — hub centred, agents
-  tiled left → right → top → bottom, then top/bottom/left/right per round).
+  tiled left → right → top → bottom, then top/bottom/left/right per round;
+  the hub keeps a fixed centred rect, empty bands stay reserved).
 - Canvas pan/zoom (`lib/canvas-nav.ts`) is semantic: layout at `rect * z`,
   terminals get `zoom` (font scales, grid held — no pty resize). App-wide zoom
   is owned by main (`src/main/app-zoom.ts`, Ctrl+= / Ctrl+- / Ctrl+0).
