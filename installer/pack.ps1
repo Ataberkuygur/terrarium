@@ -1,7 +1,7 @@
-# Builds ../terrarium-release/Terrarium-Kurulum.zip (setup exe + installer scripts).
+# Builds release/Terrarium-Kurulum.zip (setup exe + installer scripts).
 # Run via `pnpm dist:share` (which runs dist:win first).
 $root = Split-Path -Parent $PSScriptRoot
-$rel = Join-Path (Split-Path -Parent $root) 'terrarium-release'
+$rel = Join-Path $root 'release'
 $ver = (Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).version
 $stage = Join-Path $rel 'Terrarium-Kurulum'
 New-Item -ItemType Directory -Force $stage | Out-Null

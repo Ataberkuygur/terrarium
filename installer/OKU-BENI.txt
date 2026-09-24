@@ -18,7 +18,10 @@ Notlar
   (~1.6 GB) indirir. NVIDIA ekran kartı varsa onu, yoksa işlemciyi kullanır.
 - Mobil kontrol: Windows Güvenlik Duvarı izin sorarsa, telefondan kontrol
   isteniyorsa "Özel ağlar"a izin ver; istemiyorsan reddedebilirsin.
-- Güncelleme: yeni Terrarium-Setup-*.exe gelince KUR.cmd'yi tekrar çalıştır.
+- Güncelleme: Terrarium kendini günceller. Yeni sürüm çıkınca sol altta
+  "New update available" kartı belirir; "Update"e bas, uygulama yeni sürümle
+  yeniden açılır. Terminallerin ve verilerin olduğu gibi kalır.
+  En son sürüm her zaman: https://github.com/Ataberkuygur/terrarium/releases/latest
 
 
 KONTROL PROMPT'U (istersen Claude Code'a yapıştır)

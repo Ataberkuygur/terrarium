@@ -330,11 +330,20 @@ function resolveLaunch(command: string, args: string[]): Launch {
 
 // ── spawn / io ───────────────────────────────────────────────────────
 
+/** Variables that describe whoever launched Terrarium, not the terminal
+ * itself. Started from inside an agent harness (e.g. a Claude Code session),
+ * the app would otherwise hand CLAUDECODE / CLAUDE_CODE_CHILD_SESSION to every
+ * pane: claude then treats itself as a nested child — no colours, transcript
+ * saving off. ELECTRON_RUN_AS_NODE / the supervisor port are our own plumbing
+ * and would break any Electron app started from a pane. */
+const LAUNCHER_ENV = /^(CLAUDECODE$|CLAUDE_CODE_|CLAUDE_AGENT_SDK_|CLAUDE_PID$|CLAUDE_EFFORT$|CLAUDE_PREVIEW_|ELECTRON_RUN_AS_NODE$|TERRARIUM_PTY_HOST_PORT$|NO_COLOR$)/i
+
 function buildEnv(opts: Required<PtySpawnOpts>): Record<string, string> {
   const env: Record<string, string> = {}
   for (const [k, v] of Object.entries(process.env)) {
-    if (typeof v === 'string') env[k] = v
+    if (typeof v === 'string' && !LAUNCHER_ENV.test(k)) env[k] = v
   }
+  if (env.FORCE_COLOR === '0') delete env.FORCE_COLOR
   env.TERM = 'xterm-256color'
   env.COLORTERM = 'truecolor'
   for (const [k, v] of Object.entries(opts.env)) env[k] = v

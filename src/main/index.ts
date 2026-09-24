@@ -397,10 +397,14 @@ async function boot(): Promise<void> {
   }
 
   if (wikiIdx) {
-    ipcMain.handle(IPC.wikiList, (_e, pid) => getWiki(pid)!.list())
-    ipcMain.handle(IPC.wikiGet, (_e, pid, id) => getWiki(pid)!.get(id))
-    ipcMain.handle(IPC.wikiSearch, (_e, pid, q) => getWiki(pid)!.search(q))
-    ipcMain.handle(IPC.wikiSave, (_e, pid, id, body) => getWiki(pid)!.save(id, body))
+    // a project without a vault index (e.g. switched after boot) falls back
+    // to the engine docs table instead of throwing in the handler
+    ipcMain.handle(IPC.wikiList, (_e, pid) => getWiki(pid)?.list() ?? engine.listWikiPages(pid))
+    ipcMain.handle(IPC.wikiGet, (_e, pid, id) => getWiki(pid)?.get(id) ?? engine.getWikiPage(pid, id))
+    ipcMain.handle(IPC.wikiSearch, (_e, pid, q) => getWiki(pid)?.search(q) ?? engine.searchWiki(pid, q))
+    ipcMain.handle(IPC.wikiSave, (_e, pid, id, body) =>
+      getWiki(pid) ? getWiki(pid)!.save(id, body) : engine.saveWikiPage(pid, id, body)
+    )
     wikiIdx.on('changed', (e: unknown) => broadcast(IPC.wikiChanged, e))
   } else {
     ipcMain.handle(IPC.wikiList, (_e, projectId) => engine.listWikiPages(projectId))

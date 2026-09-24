@@ -48,6 +48,13 @@ jobs:
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Host "Releasing $version"
 
+      # published (non-draft) GitHub releases need their tag to exist first
+      - name: Tag release
+        shell: pwsh
+        run: |
+          git tag "v$env:VERSION"
+          git push origin "v$env:VERSION"
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck
