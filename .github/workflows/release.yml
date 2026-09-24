@@ -59,7 +59,35 @@ jobs:
 
       - run: pnpm typecheck
 
-      - name: Build & publish
-        run: pnpm release:win
+      # Build only — electron-builder's in-process GitHub upload can exit 0
+      # mid-upload (v0.2.3 shipped with just the blockmap), so publishing is
+      # a separate, verified step below.
+      - name: Build installer
+        run: pnpm dist:win
+
+      - name: Publish release
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $files = @(
+            "release/Terrarium-Setup-$env:VERSION.exe",
+            "release/Terrarium-Setup-$env:VERSION.exe.blockmap",
+            "release/latest.yml"
+          )
+          foreach ($f in $files) { if (-not (Test-Path $f)) { throw "missing build output: $f" } }
+          gh release create "v$env:VERSION" --title "$env:VERSION" --notes "" --latest
+          gh release upload "v$env:VERSION" @files --clobber
+          if ($LASTEXITCODE -ne 0) { throw "upload failed" }
+
+      # the updater needs both the installer and latest.yml on the release
+      - name: Verify release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $assets = gh release view "v$env:VERSION" --json assets --jq '.assets[].name'
+          foreach ($need in @("Terrarium-Setup-$env:VERSION.exe", "latest.yml")) {
+            if ($assets -notcontains $need) { throw "release v$env:VERSION is missing $need" }
+          }
+          Write-Host "v$env:VERSION published with: $($assets -join ', ')"
