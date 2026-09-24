@@ -25,7 +25,8 @@ import { createQuizProvider } from '../lib/quiz/llm-provider'
 import { PROVIDER_OPTIONS } from '../quiz/QuizSettingsModal'
 import { uiTap } from '../lib/sfx'
 import clsx from 'clsx'
-import { KeyRound, ZoomIn } from 'lucide-react'
+import { KeyRound, RefreshCw, ZoomIn } from 'lucide-react'
+import type { UpdateStatus } from '@shared/updater'
 import type { JevKeyStatus } from '@shared/jev'
 import {
   APP_ZOOM_MAX,
@@ -184,6 +185,7 @@ export function SettingsModal() {
         </div>
 
         <AppearanceSection />
+        <UpdateSection />
         <JevSection />
 
         <div className="flex min-h-0 max-h-[70vh]">
@@ -517,6 +519,89 @@ function AppearanceSection() {
         {modes.find((m) => m.id === render)?.hint}
       </span>
     </div>
+    </div>
+  )
+}
+
+/**
+ * Güncellemeler — running version + a manual "check now" (the updater
+ * otherwise checks on launch and every 30 min). A found update downloads
+ * in the background; once ready, the button restarts into it.
+ */
+function UpdateSection() {
+  const u = window.terrarium?.updater
+  const [s, setS] = useState<UpdateStatus | null>(null)
+  const [asked, setAsked] = useState(false)
+  useEffect(() => {
+    if (!u) return
+    let alive = true
+    u.get().then((v) => alive && setS(v)).catch(() => {})
+    const off = u.onStatus((v) => setS(v))
+    return () => {
+      alive = false
+      off()
+    }
+  }, [u])
+
+  const state = s?.state ?? 'disabled'
+  const busy = state === 'checking' || state === 'downloading' || state === 'available'
+  const detail =
+    state === 'disabled'
+      ? 'Geliştirme sürümünde güncelleme kapalı'
+      : state === 'checking'
+        ? 'Denetleniyor…'
+        : state === 'available'
+          ? `v${s?.version} bulundu — indiriliyor…`
+          : state === 'downloading'
+            ? `v${s?.version} indiriliyor — %${s?.percent ?? 0}`
+            : state === 'ready'
+              ? `v${s?.version} hazır — yeniden başlatınca kurulur`
+              : state === 'error'
+                ? `Denetlenemedi: ${s?.error ?? 'bilinmeyen hata'}`
+                : asked
+                  ? 'Güncelsin — en yeni sürüm bu'
+                  : 'Açılışta ve 30 dakikada bir otomatik denetlenir'
+
+  return (
+    <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-5 py-3.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+        <RefreshCw size={14} className={clsx(busy && 'animate-spin')} />
+      </span>
+      <div className="w-36 shrink-0">
+        <div className="text-[12.5px] font-medium text-t1">Güncellemeler</div>
+        <div className="tnum text-[11px] leading-snug text-t4">Sürüm {s?.current ?? '—'}</div>
+      </div>
+      <span
+        className={clsx(
+          'min-w-0 flex-1 truncate text-[11.5px]',
+          state === 'error' ? 'text-[var(--color-error)]' : state === 'ready' ? 'text-accent' : 'text-t3'
+        )}
+        title={detail}
+      >
+        {detail}
+      </span>
+      {state === 'ready' ? (
+        <button
+          type="button"
+          onClick={() => void u?.install().then(setS)}
+          className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-[12px] font-medium text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
+        >
+          Yeniden başlat ve güncelle
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={!u || state === 'disabled' || busy}
+          onClick={() => {
+            uiTap()
+            setAsked(true)
+            void u?.check().then(setS).catch(() => {})
+          }}
+          className="btn-accent-soft flex h-7 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[12px] font-medium disabled:pointer-events-none disabled:opacity-40"
+        >
+          Güncellemeleri denetle
+        </button>
+      )}
     </div>
   )
 }
