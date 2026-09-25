@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 DEFAULT_CONFIG = {
-    "hotkey": "f9",
+    "hotkey": "f8",
     "mode": "smart",  # "smart" (hold for PTT, tap to toggle), "push_to_talk", "toggle"
     "backend": "local",  # "local", "groq", "openai"
     "local_model": "large-v3-turbo",  # "large-v3-turbo", "medium", "small", "base"

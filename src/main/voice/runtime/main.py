@@ -57,7 +57,7 @@ class SuperWhisperApp:
         self._proc_lock = threading.Lock()
 
         logging.info("=" * 60)
-        logging.info(f"Starting SuperWhisper - Hotkey: [{self.config.get('hotkey', 'f9').upper()}]")
+        logging.info(f"Starting SuperWhisper - Hotkey: [{self.config.get('hotkey', 'f8').upper()}]")
         logging.info(f"Mode: {self.config.get('mode', 'smart')}")
         logging.info(f"Model: {self.config.get('local_model', 'large-v3-turbo')} on {self.config.get('device', 'cuda')}")
         logging.info("=" * 60)
@@ -79,7 +79,7 @@ class SuperWhisperApp:
 
         # 4. Initialize Hotkey Listener
         self.hotkey_listener = HotkeyListener(
-            hotkey=self.config.get("hotkey", "f9"),
+            hotkey=self.config.get("hotkey", "f8"),
             mode=self.config.get("mode", "smart"),
             on_start_recording=self.on_start_recording,
             on_stop_recording=self.on_stop_recording,
@@ -107,7 +107,7 @@ class SuperWhisperApp:
                 logging.info("[App] Ignored start: already processing previous audio")
                 return
 
-        active_key = getattr(self.hotkey_listener, "active_key", None) or self.config.get("hotkey", "f9")
+        active_key = getattr(self.hotkey_listener, "active_key", None) or self.config.get("hotkey", "f8")
         hotkey_name = active_key.upper()
         logging.info(f"[App] 🎙️ Recording started... (Press/release {hotkey_name} to transcribe)")
 
@@ -229,7 +229,7 @@ class SuperWhisperApp:
     def run(self):
         # Start hotkey listener
         self.hotkey_listener.start()
-        hk = self.config.get("hotkey", "f9").upper()
+        hk = self.config.get("hotkey", "f8").upper()
         logging.info(f"[App] Ready! Press or hold {hk} anywhere on Windows to talk.")
 
         # Liveness heartbeat for the supervising Electron service

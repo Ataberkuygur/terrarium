@@ -126,9 +126,23 @@ export function syncRuntimeFiles(bundledRuntimeDir: string, targetDir: string): 
   // Restore existing config if it was valid
   if (existingConfig) {
     try {
-      writeFileSync(configFile, existingConfig, 'utf-8')
+      writeFileSync(configFile, migrateHotkey(existingConfig), 'utf-8')
     } catch {
       // ignore
     }
+  }
+}
+
+/**
+ * F9 became Terrarium's on/off switch for the engine; the old default
+ * push-to-talk key moves to F8 (a config still on F9 would fight it).
+ */
+function migrateHotkey(raw: string): string {
+  try {
+    const cfg = JSON.parse(raw) as { hotkey?: unknown }
+    if (typeof cfg.hotkey !== 'string' || cfg.hotkey.trim().toLowerCase() !== 'f9') return raw
+    return JSON.stringify({ ...cfg, hotkey: 'f8' }, null, 2)
+  } catch {
+    return raw
   }
 }

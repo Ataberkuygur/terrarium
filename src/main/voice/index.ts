@@ -1,8 +1,10 @@
 // ── Voice Subsystem Entrypoint ───────────────────────────────────────
 // Integrates local whisper-large-v3-turbo prompt injection into Terrarium.
 // Registers IPC channels and auto-provisions the voice engine on launch.
-// F8 (Fn+F8 on laptops whose F-row defaults to media keys) switches the
-// engine off and on — off frees the loaded model's RAM/VRAM.
+// F9 switches the engine off and on — off frees the loaded model's RAM/VRAM.
+// F8 is the engine's own push-to-talk key (runtime/hotkey_listener.py never
+// listens to F9). Fn is resolved in the keyboard firmware, so Fn+F9 and F9
+// are the same key to Windows.
 
 import { app, globalShortcut, ipcMain, Notification } from 'electron'
 import { join } from 'node:path'
@@ -10,7 +12,7 @@ import { VOICE_IPC } from '@shared/ipc'
 import type { TerrariumPaths } from '../engine/paths'
 import { VoiceService } from './service'
 
-const TOGGLE_ACCELERATOR = 'F8'
+const TOGGLE_ACCELERATOR = 'F9'
 
 let globalVoiceService: VoiceService | null = null
 let watchdogTimer: ReturnType<typeof setInterval> | null = null
@@ -24,7 +26,7 @@ function toggleVoice(service: VoiceService): void {
     if (Notification.isSupported()) {
       new Notification({
         title: on ? 'Ses modülü açıldı' : 'Ses modülü kapatıldı',
-        body: on ? 'Whisper yükleniyor — birkaç saniye sürer.' : 'Model bellekten atıldı. Tekrar açmak için F8.',
+        body: on ? 'Whisper yükleniyor — birkaç saniye sürer.' : 'Model bellekten atıldı. Tekrar açmak için F9.',
         silent: true
       }).show()
     }
@@ -56,12 +58,17 @@ export function initVoiceService(
     return service.getStatus()
   })
 
-  if (!globalShortcut.register(TOGGLE_ACCELERATOR, () => toggleVoice(service))) {
-    console.warn(`[voice] ${TOGGLE_ACCELERATOR} is taken by another app — toggle unavailable`)
-  }
-
   // Kick off background start / verification asynchronously so window launch is not blocked
-  void service.start().catch((err) => {
+  void (async () => {
+    const bind = () => globalShortcut.register(TOGGLE_ACCELERATOR, () => toggleVoice(service))
+    if (!bind()) {
+      // an engine from an older build (it outlives app updates) still holds
+      // F9 as a push-to-talk key — replace it with the current runtime
+      await service.kill()
+      if (!bind()) console.warn(`[voice] ${TOGGLE_ACCELERATOR} is taken by another app — toggle unavailable`)
+    }
+    await service.start()
+  })().catch((err) => {
     console.warn('[voice] Service startup warning:', err)
   })
 

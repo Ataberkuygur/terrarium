@@ -56,7 +56,7 @@ class TrayManager:
             print(f"[Tray] Error opening config folder: {e}")
 
     def _get_menu(self):
-        hotkey = self.config.get("hotkey", "f9").upper()
+        hotkey = self.config.get("hotkey", "F8").upper()
         backend = self.config.get("backend", "local").capitalize()
         model = self.config.get("local_model", "large-v3-turbo")
 
@@ -104,7 +104,7 @@ class TrayManager:
 
     def run(self):
         image = create_tray_icon_image("idle")
-        hotkey = self.config.get("hotkey", "f9").upper()
+        hotkey = self.config.get("hotkey", "F8").upper()
         self.icon = pystray.Icon(
             "SuperWhisper",
             image,

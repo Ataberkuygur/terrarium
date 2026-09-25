@@ -1,5 +1,5 @@
 {
-  "hotkey": "f9",
+  "hotkey": "f8",
   "mode": "smart",
   "backend": "local",
   "local_model": "large-v3-turbo",

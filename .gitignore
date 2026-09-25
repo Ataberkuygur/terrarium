@@ -16,3 +16,5 @@ nul
 agent-of-ataberk.md
 %TEMP%models.json
 *.orig.tsx
+
+__pycache__/

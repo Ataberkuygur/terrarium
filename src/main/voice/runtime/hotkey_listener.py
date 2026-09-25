@@ -16,6 +16,9 @@ VK_MAP = {
     "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
 }
 
+# Keys Terrarium itself binds globally (F9 = voice module on/off).
+RESERVED_KEYS = {"f9"}
+
 
 class HotkeyListener:
     """
@@ -25,24 +28,27 @@ class HotkeyListener:
       2. Win32 RegisterHotKey system-level kernel registration
       3. Win32 GetAsyncKeyState hardware polling fallback
     Guarantees 100% key detection across any window, terminal, game, or elevated app.
-    Supports primary key (F9) and fallbacks (F8, F7) out of the box.
+    Supports primary key (F8) and a fallback (F7) out of the box. F9 is never
+    listened to: Terrarium owns it as the voice module's on/off switch.
     """
 
     def __init__(
         self,
-        hotkey: str = "f9",
+        hotkey: str = "f8",
         mode: str = "smart",  # "smart", "push_to_talk", "toggle"
         on_start_recording=None,
         on_stop_recording=None,
     ):
-        self.target_hotkey_name = hotkey.lower().strip()
+        target = hotkey.lower().strip()
+        # F9 is Terrarium's on/off switch — a press there must not also record
+        self.target_hotkey_name = "f8" if target in RESERVED_KEYS else target
         self.mode = mode
         self.on_start_recording = on_start_recording
         self.on_stop_recording = on_stop_recording
 
-        # Build list of allowed key names and VKs (target key + F9 + F8 + F7)
+        # Build list of allowed key names and VKs (target key + F8 + F7)
         self.allowed_keys = {self.target_hotkey_name}
-        for fb in ["f9", "f8", "f7"]:
+        for fb in ["f8", "f7"]:
             self.allowed_keys.add(fb)
 
         self.allowed_vks = {}

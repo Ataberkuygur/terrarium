@@ -170,7 +170,7 @@ class OverlayHUD:
             while not self.queue.empty():
                 action, payload = self.queue.get_nowait()
                 if action == "show_listening":
-                    hotkey = payload.get("hotkey", "F9").upper()
+                    hotkey = payload.get("hotkey", "F8").upper()
                     self.icon_label.config(text="🔴", fg="#ef4444")
                     self.text_label.config(text=f"Listening... [{hotkey} to stop]", fg="#f4f4f5")
                     self.frame.config(highlightbackground="#ef4444")

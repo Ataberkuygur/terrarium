@@ -56,9 +56,7 @@ export class VoiceService {
     }
     await writeFile(this.disabledMarker(), '').catch(() => {})
     this.updateStatus({ enabled: false })
-    this.stop()
-    await this.killStaleInstances()
-    this.updateStatus({ ready: false, running: false })
+    await this.kill()
   }
 
   getStatus(): VoiceStatus {
@@ -186,5 +184,13 @@ export class VoiceService {
       this.child = null
     }
     this.updateStatus({ running: false })
+  }
+
+
+  /** Stop every instance of our engine, including one a previous app run left detached. */
+  async kill(): Promise<void> {
+    this.stop()
+    await this.killStaleInstances()
+    this.updateStatus({ ready: false, running: false })
   }
 }
