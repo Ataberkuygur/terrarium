@@ -41,15 +41,82 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R
   return out
 }
 
-/** file → summary at a given mtime: re-listing only re-reads transcripts that moved. */
-const summaryCache = new Map<string, { mtime: number; summary: string | null }>()
+/** Bytes read from a transcript's end for its latest title record (~95% hit). */
+const TAIL_BYTES = 256 * 1024
+/** Step and limit for walking further back when the tail has no title. */
+const TITLE_CHUNK_BYTES = 1024 * 1024
+const TITLE_SCAN_MAX = 16 * 1024 * 1024
 
-async function cachedSummary(file: string, mtime: number): Promise<string | null> {
+/** file → title/prompt at a given mtime: re-listing only re-reads transcripts that moved. */
+const summaryCache = new Map<string, { mtime: number; summary: string | null; prompt: string | null }>()
+
+async function cachedSummary(
+  file: string,
+  mtime: number,
+  size: number
+): Promise<{ summary: string | null; prompt: string | null }> {
   const hit = summaryCache.get(file)
-  if (hit && hit.mtime === mtime) return hit.summary
-  const summary = headSummary(await readHead(file).catch(() => ''))
-  summaryCache.set(file, { mtime, summary })
-  return summary
+  if (hit && hit.mtime === mtime) return hit
+  const head = await readHead(file).catch(() => '')
+  const prompt = headSummary(head)
+  // the name `claude --resume` lists and searches: its latest title record
+  const title = await transcriptTitle(file, size).catch(() => null)
+  const meta = { mtime, summary: title ?? prompt, prompt }
+  summaryCache.set(file, meta)
+  return meta
+}
+
+/** Title record kinds, best first: /rename, its agent-name twin, the auto title. */
+const TITLE_KINDS = ['custom-title', 'agent-name', 'ai-title'] as const
+const TITLE_RE = /\{"type":"(custom-title|agent-name|ai-title)"[^\n]*/g
+
+/** Latest title in a chunk of transcript lines, by kind priority. */
+function titleIn(chunk: string): string | null {
+  const latest = new Map<string, string>()
+  for (const m of chunk.matchAll(TITLE_RE)) {
+    try {
+      const j = JSON.parse(m[0]) as { customTitle?: unknown; agentName?: unknown; aiTitle?: unknown }
+      const t = j.customTitle ?? j.agentName ?? j.aiTitle
+      if (typeof t === 'string' && t.trim()) latest.set(m[1], t.trim())
+    } catch {
+      /* cut at the chunk edge — an earlier/later copy will parse */
+    }
+  }
+  for (const k of TITLE_KINDS) {
+    const t = latest.get(k)
+    if (t) return t
+  }
+  return null
+}
+
+/**
+ * Claude re-appends its title records all through a transcript, but the
+ * first one only lands after the opening turns (100–500 KB in) — never in
+ * the head sample. Read backwards from the end: the tail almost always has
+ * one; a long tool-heavy stretch pushes it further back.
+ */
+async function transcriptTitle(path: string, size: number): Promise<string | null> {
+  const fh = await fs.open(path, 'r')
+  try {
+    let end = size
+    let first = true
+    while (end > 0 && size - end < TITLE_SCAN_MAX) {
+      const span = first ? TAIL_BYTES : TITLE_CHUNK_BYTES
+      const start = Math.max(0, end - span)
+      // overlap the next (later) chunk a little so a record cut at the edge
+      // is whole in one of them
+      const stop = Math.min(size, end + 4096)
+      const buf = Buffer.alloc(stop - start)
+      const { bytesRead } = await fh.read(buf, 0, buf.length, start)
+      const title = titleIn(buf.toString('utf8', 0, bytesRead))
+      if (title) return title
+      end = start
+      first = false
+    }
+    return null
+  } finally {
+    await fh.close()
+  }
 }
 
 async function readHead(path: string): Promise<string> {
@@ -133,7 +200,7 @@ function headSummary(head: string): string | null {
 // dir once). qoder keeps the identical layout under ~/.qoder/projects.
 async function jsonlProjectSessions(root: string): Promise<CliSessionEntry[]> {
   const dirs = await fs.readdir(root, { withFileTypes: true }).catch(() => [])
-  const found: { id: string; at: number; file: string; cwd: string | null }[] = []
+  const found: { id: string; at: number; size: number; file: string; cwd: string | null }[] = []
 
   for (const d of dirs) {
     if (!d.isDirectory()) continue
@@ -145,10 +212,10 @@ async function jsonlProjectSessions(root: string): Promise<CliSessionEntry[]> {
       await Promise.all(
         files.map(async (f) => {
           const st = await fs.stat(join(dir, f)).catch(() => null)
-          return st ? { name: f, mtime: st.mtimeMs } : null
+          return st ? { name: f, mtime: st.mtimeMs, size: st.size } : null
         })
       )
-    ).filter((s): s is { name: string; mtime: number } => !!s)
+    ).filter((s): s is { name: string; mtime: number; size: number } => !!s)
     if (!stats.length) continue
     stats.sort((a, b) => b.mtime - a.mtime)
 
@@ -158,6 +225,7 @@ async function jsonlProjectSessions(root: string): Promise<CliSessionEntry[]> {
       found.push({
         id: s.name.slice(0, -'.jsonl'.length),
         at: s.mtime,
+        size: s.size,
         file: join(dir, s.name),
         cwd
       })
@@ -166,12 +234,10 @@ async function jsonlProjectSessions(root: string): Promise<CliSessionEntry[]> {
 
   found.sort((a, b) => b.at - a.at)
   const top = found.slice(0, MAX_SESSIONS)
-  return mapLimit(top, READ_CONCURRENCY, async ({ id, at, file, cwd }) => ({
-    id,
-    at,
-    cwd,
-    summary: await cachedSummary(file, at)
-  }))
+  return mapLimit(top, READ_CONCURRENCY, async ({ id, at, size, file, cwd }) => {
+    const { summary, prompt } = await cachedSummary(file, at, size)
+    return { id, at, cwd, summary, prompt }
+  })
 }
 
 function claudeSessions(): Promise<CliSessionEntry[]> {

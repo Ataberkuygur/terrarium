@@ -10,8 +10,13 @@ export interface CliSessionEntry {
   id: string
   /** Last activity, ms epoch (transcript mtime / rollout timestamp). */
   at: number
-  /** First user prompt / summary line when recoverable — may be null. */
+  /**
+   * What the CLI's own picker shows: the session title (claude: its latest
+   * custom-title / ai-title record), else the first user prompt — may be null.
+   */
   summary: string | null
+  /** First user prompt, when it differs from the title (searchable too). */
+  prompt?: string | null
   /**
    * Directory the session was created in — resume spawns the CLI here
    * (claude `--resume` only resolves transcripts under their own project

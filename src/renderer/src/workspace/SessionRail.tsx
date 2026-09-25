@@ -674,6 +674,7 @@ export function LeafSessions({
                   }}
                   title={
                     (s.summary ? `${s.summary}\n` : '') +
+                    (s.prompt && s.prompt !== s.summary ? `› ${s.prompt}\n` : '') +
                     (running ? 'Running in this pane' : s.cwd ? `Resume in ${s.cwd}` : 'Resume session')
                   }
                   className={clsx(

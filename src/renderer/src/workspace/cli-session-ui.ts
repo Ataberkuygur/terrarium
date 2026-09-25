@@ -57,17 +57,18 @@ export function sessionDetail(s: CliSessionEntry, projectRoot: string | undefine
 }
 
 /**
- * Live filter for the rail's search box — case-insensitive substring over
- * everything the row shows: summary (fallback id), and cwd.
+ * Live filter for the rail's search box — case-insensitive, every word must
+ * hit somewhere in: title (what `claude --resume` lists), first prompt, cwd
+ * or id. Turkish-aware lowercasing, so "İ"/"ı" match as typed.
  */
 export function sessionMatches(s: CliSessionEntry, q: string): boolean {
-  const needle = q.trim().toLowerCase()
-  if (!needle) return true
-  return (
-    (s.summary ?? '').toLowerCase().includes(needle) ||
-    (s.cwd ?? '').toLowerCase().includes(needle) ||
-    s.id.toLowerCase().includes(needle)
-  )
+  const words = q.trim().toLocaleLowerCase('tr').split(/\s+/).filter(Boolean)
+  if (!words.length) return true
+  const hay = [s.summary, s.prompt, s.cwd, s.id]
+    .filter(Boolean)
+    .join('\n')
+    .toLocaleLowerCase('tr')
+  return words.every((w) => hay.includes(w))
 }
 
 /** Past sessions for a resumable CLI — null while loading or not applicable. */
