@@ -58,7 +58,7 @@ export function terminalLabel(sid: string): string {
   return 'Terminal'
 }
 
-function ago(at: number): string {
+export function ago(at: number): string {
   const s = Math.max(0, (Date.now() - at) / 1000)
   if (s < 45) return 'şimdi'
   if (s < 3600) return `${Math.round(s / 60)} dk`
@@ -372,7 +372,7 @@ function TabButton({
   )
 }
 
-function Empty({ loaded, icon, text }: { loaded: boolean; icon: React.ReactNode; text: string }) {
+export function Empty({ loaded, icon, text }: { loaded: boolean; icon: React.ReactNode; text: string }) {
   if (!loaded) return <div className="py-10 text-center text-[11.5px] text-t4">Yükleniyor…</div>
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[var(--border-default)] px-6 py-9 text-center">
@@ -382,7 +382,7 @@ function Empty({ loaded, icon, text }: { loaded: boolean; icon: React.ReactNode;
   )
 }
 
-function IconAction({
+export function IconAction({
   label,
   onClick,
   danger,

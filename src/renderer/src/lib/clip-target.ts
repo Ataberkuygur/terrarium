@@ -111,6 +111,22 @@ export function isClipDrag(dt: DataTransfer | null): boolean {
   return !!dt && Array.from(dt.types).includes(CLIP_MIME)
 }
 
+/** A drag carrying real files — Explorer, or a Downloads panel item (native drag). */
+export function isFileDrag(dt: DataTransfer | null): boolean {
+  return !!dt && Array.from(dt.types).includes('Files')
+}
+
+/** Dropped files → their paths, quoted where needed, as one attach. */
+export function readFileDrop(dt: DataTransfer): ClipPayload | null {
+  const pathFor = (window.terrarium as { pathForFile?: (f: File) => string } | undefined)?.pathForFile
+  const paths = Array.from(dt.files)
+    .map((f) => pathFor?.(f) ?? '')
+    .filter(Boolean)
+  if (!paths.length) return null
+  // a trailing space so the next word doesn't glue on (as image attaches do)
+  return { kind: 'text', text: paths.map((p) => (/\s/.test(p) ? `"${p}"` : p)).join(' ') + ' ' }
+}
+
 // ── host bridge (narrowed like ClipPeek — lib/ipc.ts predates it) ──
 export interface ClipHistoryBridge {
   list(): Promise<{ images: { path: string; at: number }[]; texts: { id: string; text: string; at: number }[] }>

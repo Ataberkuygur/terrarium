@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, net, type IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer, net, webUtils, type IpcRendererEvent } from 'electron'
 import { UPDATER_IPC, type UpdateStatus } from '../shared/updater'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -370,6 +370,38 @@ const api = {
   },
   /** Reveal a file in the OS file manager. */
   showItem: (path: string) => ipcRenderer.invoke('shell:showItem', path),
+  /** Absolute path of a File from a drop (Explorer / native drag) — '' when it has none. */
+  pathForFile: (file: File) => {
+    try {
+      return webUtils.getPathForFile(file)
+    } catch {
+      return ''
+    }
+  },
+  /** Downloads panel: newest files in the OS Downloads folder (main/downloads.ts). */
+  downloads: {
+    list: () =>
+      ipcRenderer.invoke('dl:list') as Promise<{
+        dir: string
+        files: { path: string; name: string; size: number; at: number }[]
+      }>,
+    thumb: (path: string) =>
+      ipcRenderer.invoke('dl:thumb', path) as Promise<{
+        dataUrl: string
+        width: number
+        height: number
+        icon: boolean
+      } | null>,
+    open: (path: string) => ipcRenderer.invoke('dl:open', path) as Promise<boolean>,
+    reveal: (path: string) => ipcRenderer.invoke('dl:reveal', path) as Promise<boolean>,
+    /** Start a native OS file drag — call from the item's dragstart. */
+    startDrag: (path: string) => ipcRenderer.send('dl:drag', path),
+    onChange(cb: () => void) {
+      const handler = () => cb()
+      ipcRenderer.on('downloads:changed', handler)
+      return () => ipcRenderer.removeListener('downloads:changed', handler)
+    }
+  },
 
   /** Whole-UI zoom owned by main — get/set the factor, hear changes (Ctrl+= / Ctrl+- / Ctrl+0). */
   appZoom: {

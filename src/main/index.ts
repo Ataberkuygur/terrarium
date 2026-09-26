@@ -23,6 +23,7 @@ import { startMobileServer, type MobileInfo } from './mobile'
 import { initVoiceService, stopVoiceService } from './voice'
 import { registerJevIpc } from './jev'
 import { clipImageMuted, pollClipboardText, registerClipHistory } from './clip-history'
+import { registerDownloads } from './downloads'
 import { suggestNetworkTopic } from './net-topic'
 import { initUpdater } from './updater'
 import { migrateDevLocalStorage } from './storage-migration'
@@ -511,6 +512,7 @@ async function boot(): Promise<void> {
   // read the (potentially large) image when the signature actually changed.
   const appPaths = ensurePaths()
   registerClipHistory(appPaths.home)
+  registerDownloads(broadcast)
   startClipboardWatch(appPaths.home, broadcast)
 
   // ── voice-to-terminal prompt injection (Whisper large-v3-turbo / F8) ──

@@ -36,6 +36,7 @@ import {
 } from '../lib/workspace-events'
 import { SessionRail } from '../workspace/SessionRail'
 import { ClipboardButton } from '../components/ClipboardPanel'
+import { DownloadsButton } from '../components/DownloadsPanel'
 import { LayoutMenu } from '../workspace/LayoutMenu'
 import { paneClose, paneSplit, uiTap } from '../lib/sfx'
 import { setPaneHooks, type WorkspaceSpawnOpts } from '../lib/pane-bridge'
@@ -734,6 +735,7 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
             <OrchestrationTabs />
             <span className="flex-1" />
             <OrchestrationActions />
+            <DownloadsButton />
             <ClipboardButton />
           </div>
         ) : (
@@ -813,7 +815,8 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
 
         <span className="flex-1" />
 
-        {/* clipboard history — photos / texts into the focused terminal */}
+        {/* recent downloads + clipboard history — into the focused terminal */}
+        <DownloadsButton />
         <ClipboardButton />
 
         {/* tidy button on the edge */}
