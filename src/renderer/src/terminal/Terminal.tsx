@@ -34,8 +34,10 @@ import { registerScrollbackReader } from '../lib/terminal-classify'
 import {
   insertClip,
   isClipDrag,
+  isFileDrag,
   noteTerminalFocus,
   readClipDrag,
+  readFileDrop,
   registerClipTerminal
 } from '../lib/clip-target'
 import '@xterm/xterm/css/xterm.css'
@@ -406,6 +408,7 @@ export function Terminal({
     let webglCtx: WebGL2RenderingContext | null = null
     let webglBroken = false
     let disposed = false
+    let atlasHealRaf = 0
     const dropWebgl = () => {
       const w = webgl
       if (!w) return
@@ -448,6 +451,21 @@ export function Terminal({
               webglBroken = true
               dropWebgl()
               requestAnimationFrame(() => healRef.current?.(true))
+            })
+            // Shared-atlas page merge: every terminal on the atlas sees its
+            // pages deleted and re-indexed, but a GL texture is re-uploaded
+            // only when its page's version differs — a shifted page (or the
+            // merged one appended at the end) can land on an index whose
+            // stale texture carries the same version number, so other panes
+            // sample the wrong page and draw black. The heal's resize path
+            // re-binds the atlas (every texture re-uploaded) and rebuilds
+            // the model. One per frame, whatever the burst size.
+            w.onRemoveTextureAtlasCanvas(() => {
+              if (webgl !== w || atlasHealRaf) return
+              atlasHealRaf = requestAnimationFrame(() => {
+                atlasHealRaf = 0
+                healRef.current?.(true)
+              })
             })
             const before = new Set<Element>(term.element?.querySelectorAll('canvas') ?? [])
             term.loadAddon(w)
@@ -933,6 +951,7 @@ export function Terminal({
       window.removeEventListener('pointerup', onPointerUpIntent, true)
       window.removeEventListener('pointercancel', onPointerUpIntent, true)
       cancelAnimationFrame(driftRaf)
+      cancelAnimationFrame(atlasHealRaf)
       try {
         typeSub.dispose()
       } catch {
@@ -1071,26 +1090,28 @@ export function Terminal({
       el.removeEventListener('focusin', onFocus)
     }
   }, [sid])
+  const droppable = (dt: DataTransfer) => isClipDrag(dt) || isFileDrag(dt)
   const onDragEnter = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!isClipDrag(e.dataTransfer)) return
+    if (!droppable(e.dataTransfer)) return
     e.preventDefault()
     dragDepth.current++
     setDropHot(true)
   }
   const onDragOver = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!isClipDrag(e.dataTransfer)) return
+    if (!droppable(e.dataTransfer)) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
   }
   const onDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!isClipDrag(e.dataTransfer)) return
+    if (!droppable(e.dataTransfer)) return
     dragDepth.current = Math.max(0, dragDepth.current - 1)
     if (!dragDepth.current) setDropHot(false)
   }
   const onDrop = (e: ReactDragEvent<HTMLDivElement>) => {
     dragDepth.current = 0
     setDropHot(false)
-    const clip = readClipDrag(e.dataTransfer)
+    // a file (Explorer, Downloads panel) goes in as its path
+    const clip = readClipDrag(e.dataTransfer) ?? readFileDrop(e.dataTransfer)
     if (!clip || !sid) return
     e.preventDefault()
     insertClip(clip, sid)

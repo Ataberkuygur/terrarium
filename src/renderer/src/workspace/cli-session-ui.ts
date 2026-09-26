@@ -12,7 +12,9 @@ import {
   type PaneLeaf
 } from '../lib/panes'
 import { getPty } from '../lib/ipc'
-import { getWorkspaceTerminalLeaves } from '../lib/terminal-agents'
+import { getAllTerminalLeaves, getWorkspaceTerminalLeaves } from '../lib/terminal-agents'
+import { paneDispatch } from '../lib/pane-bridge'
+import { leafRunningSession } from '../lib/workspace-resume'
 import { categoryForSession } from '../lib/categories'
 import { useApp } from '../lib/store'
 
@@ -110,11 +112,17 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
  * Rebind a leaf to `command`/`cwd`, retiring its old pty — and when the
  * command resumes a CLI session, take ownership of the transcript first:
  * a CLI session can only be open in one process, so every OTHER holder is
- * evicted — sibling leaves bound to the same resume are unbound+killed,
+ * evicted — a sibling grid leaf still RUNNING that session is unbound+killed,
  * and orphan supervisor sessions still running it (panes closed before
  * kill-on-close existed) are reaped. Without this the new pane's CLI dies
  * on the transcript lock ('session is locked') while the session keeps
  * running in whatever terminal held it before.
+ *
+ * Only the picked pane may change otherwise. A binding's `--resume <id>`
+ * is just what the pane was launched with — its CLI may have moved on
+ * since (/resume, /clear, a restore into its latest session) — so a
+ * sibling is judged by the session it is known to run now, and a live
+ * pane's pty is never taken for an orphan.
  */
 export function claimLeafCommand(
   dispatch: ((action: PaneAction) => void) | null,
@@ -135,18 +143,24 @@ export function claimLeafCommand(
     }
 
     if (cli && token) {
-      // Sibling leaves bound to the same session lose it — the binding
+      // A sibling grid leaf running this session loses it — the binding
       // moves to the pane the user picked (their pty dies with the unbind).
-      for (const l of getWorkspaceTerminalLeaves()) {
+      // Grid leaves go through the grid's own dispatch: `dispatch` is the
+      // orchestration store's when the pick came from a network node.
+      const grid = paneDispatch()
+      for (const l of grid ? getWorkspaceTerminalLeaves() : []) {
         if (l.id === leaf.id) continue
-        if (cliName(l.command) !== cli || resumeToken(l.command) !== token) continue
-        dispatch?.({
+        if (cliName(l.command) !== cli) continue
+        if (leafRunningSession(l, resumeToken(l.command)) !== token) continue
+        grid?.({
           type: 'update',
           leafId: l.id,
           patch: { command: undefined, cwd: undefined }
         })
         kill(commandSessionId(l))
       }
+      // every pty a pane or network node is showing right now
+      const owned = new Set(getAllTerminalLeaves().map((l) => l.id))
 
       // Orphaned supervisor sessions running this same resume — no leaf
       // claims them, but they still hold the session lock. The sid suffix
@@ -159,6 +173,7 @@ export function claimLeafCommand(
         if (s.status !== 'running' && s.status !== 'spawning') continue
         if (s.sessionId === newSid) continue // leaf's target sid — adopted, not killed
         if (s.sessionId === oldSid) continue // killed below
+        if (owned.has(s.sessionId.split(':')[0])) continue // a live pane's, not an orphan
         if (cliName(s.command) !== cli) continue
         const match = [s.cwd, undefined].some(
           (c) => s.sessionId.endsWith(`:${commandSessionKey(cmd, c)}`)

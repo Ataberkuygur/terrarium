@@ -21,8 +21,16 @@ const PANES_KEY = 'terrarium.panes'
 const BIND_EVERY_MS = 20_000
 const RESTORE_TIMEOUT_MS = 10_000
 
-function load(): Map<string, NodeResume> {
-  const out = new Map<string, NodeResume>()
+/**
+ * A leaf's memory, stamped with the pty session (commandSessionId) it was
+ * learned from. Rebinding the leaf (a History pick, another CLI, an
+ * eviction) re-keys its sid — the memory then belongs to a run that no
+ * longer exists and must not steer what the new binding spawns.
+ */
+type LeafResume = NodeResume & { sid?: string }
+
+function load(): Map<string, LeafResume> {
+  const out = new Map<string, LeafResume>()
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) ?? '{}') as Record<string, unknown>
     for (const [id, v] of Object.entries(raw)) {
@@ -37,7 +45,8 @@ function load(): Map<string, NodeResume> {
         pid: num(r.pid),
         since: num(r.since),
         cwd: str(r.cwd),
-        active: r.active === true
+        active: r.active === true,
+        sid: str(r.sid)
       })
     }
   } catch {
@@ -65,18 +74,19 @@ function persist(): void {
   }
 }
 
-function same(a: NodeResume | undefined, b: NodeResume | undefined): boolean {
+function same(a: LeafResume | undefined, b: LeafResume | undefined): boolean {
   return (
     a?.cli === b?.cli &&
     a?.id === b?.id &&
     a?.pid === b?.pid &&
     a?.since === b?.since &&
     a?.cwd === b?.cwd &&
-    a?.active === b?.active
+    a?.active === b?.active &&
+    a?.sid === b?.sid
   )
 }
 
-function apply(patch: Map<string, NodeResume | undefined>): void {
+function apply(patch: Map<string, LeafResume | undefined>): void {
   let changed = false
   for (const [id, r] of patch) {
     if (same(resumes.get(id), r)) continue
@@ -99,10 +109,18 @@ function gridLeaves(): PaneLeaf[] | null {
   }
 }
 
+/** The leaf's memory, if it was learned from the pty session the leaf is bound to now. */
+function currentResume(leaf: PaneLeaf): LeafResume | undefined {
+  const r = resumes.get(leaf.id)
+  // legacy entries (no sid) predate the stamp — trust them once; the next
+  // refresh stamps them
+  return r && (!r.sid || r.sid === commandSessionId(leaf)) ? r : undefined
+}
+
 /** Command a grid terminal spawns with — its CLI session resumed when it has one. */
 export function leafSpawnCommand(leaf: PaneLeaf, fallback: string): { command: string; cwd?: string } {
   const base = leaf.command?.trim() || fallback
-  const r = resumes.get(leaf.id)
+  const r = currentResume(leaf)
   if (!r?.active || !r.id) return { command: base }
   return {
     command: resumeSpawnCommand(base, isShellCommand(leaf.command), { ...r, id: r.id }),
@@ -111,7 +129,7 @@ export function leafSpawnCommand(leaf: PaneLeaf, fallback: string): { command: s
 }
 
 /** Re-render hook: the leaf's resume state + whether launch restore is still running. */
-export function useLeafResume(leafId: string): { active: boolean; restoring: boolean } {
+export function useLeafResume(leaf: PaneLeaf): { active: boolean; restoring: boolean } {
   useSyncExternalStore(
     (cb) => {
       subs.add(cb)
@@ -119,7 +137,18 @@ export function useLeafResume(leafId: string): { active: boolean; restoring: boo
     },
     () => version
   )
-  return { active: resumes.get(leafId)?.active === true, restoring }
+  return { active: currentResume(leaf)?.active === true, restoring }
+}
+
+/**
+ * The CLI session a grid leaf is known to be running right now — main's
+ * pid → session binding for its current pty when learned, else the
+ * session its binding resumes. Null when unknown.
+ */
+export function leafRunningSession(leaf: PaneLeaf, bound: string | null): string | null {
+  const r = currentResume(leaf)
+  if (r?.sid && r.active && r.id) return r.id
+  return bound
 }
 
 // ── launch: resolve the sessions of CLIs the supervisor no longer has ──
@@ -128,17 +157,17 @@ async function restore(): Promise<void> {
   const pty = getPty()
   const leaves = gridLeaves()
   if (!pty || !leaves) return
-  const want = leaves.filter((l) => resumes.get(l.id)?.active)
+  const want = leaves.filter((l) => currentResume(l)?.active)
   if (!want.length) return
   const list = await pty.list()
   const running = new Set(
     list.filter((i) => i.status === 'running' || i.status === 'spawning').map((i) => i.sessionId)
   )
   const resolve = window.terrarium?.resolveCliSession
-  const patch = new Map<string, NodeResume | undefined>()
+  const patch = new Map<string, LeafResume | undefined>()
   for (const leaf of want) {
     if (running.has(commandSessionId(leaf))) continue // supervisor kept it — nothing lost
-    const r = resumes.get(leaf.id)!
+    const r = currentResume(leaf)!
     let { id, cwd } = r
     // the pid names the session the process actually ended in (a /clear
     // or /resume inside it moves on from the recorded id)
@@ -167,7 +196,7 @@ async function refresh(): Promise<void> {
   try {
     const list = await pty.list()
     const byId = new Map(list.map((i) => [i.sessionId, i]))
-    const patch = new Map<string, NodeResume | undefined>()
+    const patch = new Map<string, LeafResume | undefined>()
     // closed panes forget their session
     const live = new Set(leaves.map((l) => l.id))
     for (const id of resumes.keys()) if (!live.has(id)) patch.set(id, undefined)
@@ -177,7 +206,7 @@ async function refresh(): Promise<void> {
       // unknown to the supervisor (fresh after a reboot) or crashed with
       // it: exactly the case to resume — leave the memory alone
       if (!info || info.status === 'dead') continue
-      const prev = resumes.get(leaf.id)
+      const prev = currentResume(leaf)
       if (info.status === 'exited') {
         // the CLI ended on its own — don't bring it back uninvited
         if (prev?.active) patch.set(leaf.id, { ...prev, active: false })
@@ -195,7 +224,7 @@ async function refresh(): Promise<void> {
       const got = await api(ask.map((a) => ({ pid: a.pid, since: a.since })))
       for (const { leaf, pid, since } of ask) {
         const b = got?.[pid]
-        const prev = resumes.get(leaf.id)
+        const prev = currentResume(leaf)
         if (!b) {
           // a shell with no CLI in it right now
           if (prev?.active) patch.set(leaf.id, { ...prev, active: false })
@@ -208,7 +237,8 @@ async function refresh(): Promise<void> {
           pid: b.pid,
           since,
           cwd: b.cwd ?? (samePid ? prev?.cwd : undefined) ?? leaf.cwd,
-          active: true
+          active: true,
+          sid: commandSessionId(leaf)
         })
       }
     }

@@ -555,10 +555,23 @@ async function run(msg: PaneCmdEnvelope): Promise<PaneCmdResult> {
           terminals: [...document.querySelectorAll('.terrarium-terminal .xterm-screen')].map((el) => {
             const b = el.getBoundingClientRect()
             const row = el.querySelector('.xterm-rows > div') as HTMLElement | null
+            // blank-pane forensics: which session, is it on screen, and is
+            // its GL canvas alive (getContext returns the existing context)
+            const host = el.closest('[data-session]') as HTMLElement | null
+            const gl = [...el.querySelectorAll('canvas')]
+              .map((c) => (c as HTMLCanvasElement).getContext('webgl2'))
+              .find(Boolean)
+            const canvas = gl?.canvas as HTMLCanvasElement | undefined
             return {
+              sid: host?.dataset.session ?? null,
               renderer: el.querySelector('canvas') ? 'webgl' : 'dom',
               x: b.x * window.devicePixelRatio,
-              fontPx: row ? parseFloat(getComputedStyle(row).fontSize) * window.devicePixelRatio : null
+              fontPx: row ? parseFloat(getComputedStyle(row).fontSize) * window.devicePixelRatio : null,
+              visible: !!host?.offsetParent && b.width > 0 && b.height > 0,
+              size: [Math.round(b.width), Math.round(b.height)],
+              glLost: gl ? gl.isContextLost() : null,
+              glCanvas: canvas ? [canvas.width, canvas.height] : null,
+              domRows: row ? el.querySelectorAll('.xterm-rows > div').length : null
             }
           })
         }

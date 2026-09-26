@@ -77,7 +77,7 @@ function ZoomTerminal(props: ComponentProps<typeof Terminal>) {
  * it would race in with a fresh CLI.
  */
 function WorkspaceTerminal({ leaf, projectRoot }: { leaf: PaneLeaf; projectRoot?: string }) {
-  const { active, restoring } = useLeafResume(leaf.id)
+  const { active, restoring } = useLeafResume(leaf)
   const sid = commandSessionId(leaf)
   if (active && restoring) {
     return (
