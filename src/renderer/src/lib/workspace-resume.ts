@@ -15,6 +15,7 @@ import { isResumableCli, resumeSpawnCommand, type NodeResume } from '@shared/cli
 import { collectLeaves, commandSessionId, deserializePanes, type PaneLeaf } from './panes'
 import { getPty } from './ipc'
 import { isShellCommand } from './live-cli'
+import { settleSessionCwd } from './session-cwd'
 
 const STORE_KEY = 'terrarium.paneResume'
 const PANES_KEY = 'terrarium.panes'
@@ -178,6 +179,8 @@ async function restore(): Promise<void> {
         cwd = hit.cwd ?? cwd
       }
     }
+    // the respawn starts in the session's own folder
+    if (id) cwd = await settleSessionCwd(r.cli, id, cwd)
     patch.set(leaf.id, id ? { ...r, id, cwd, pid: undefined } : { ...r, active: false })
   }
   apply(patch)

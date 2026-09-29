@@ -3,8 +3,8 @@
 // ORCHESTRATOR terminal sits in the middle of the canvas, SUBAGENT
 // terminals ring it, and a thin line ties each subagent to the hub
 // (Tethers.tsx). Cards can be dragged by their header and resized from
-// the corner; both are saved per node. Subagents come from the user (+ Subagent) or from
-// the orchestrator itself via `tnet` / net.* / the MCP orchestrator tools.
+// the corner; both are saved per node. Subagents come from the orchestrator
+// itself via `tnet` / net.* / the MCP orchestrator tools.
 //
 // Cards are absolutely positioned from layoutNetwork() and keyed by node
 // id, so a growing ring glides cards into place without remounting their
@@ -22,30 +22,25 @@ import {
   type ReactNode
 } from 'react'
 import {
-  ArrowLeft,
-  Cable,
-  Check,
-  Copy,
   LayoutDashboard,
   Waypoints,
   Maximize2,
   Minimize2,
   Moon,
   Plus,
-  Sparkles,
   X,
   Zap
 } from 'lucide-react'
 import clsx from 'clsx'
 import { commandSessionId, type PaneAction } from '../lib/panes'
 import {
+  activitySnapshot,
   statusSnapshot,
-  MAX_AGENTS,
   nodeSpawnOpts,
   nodeStatus,
   orchestratorPrimer,
-  orchHostInfo,
   readScreen,
+  subscribeActivity,
   subscribeStatus,
   useOrch,
   effectiveCommand,
@@ -63,7 +58,7 @@ import { Terminal, getPtyBridge } from '../terminal'
 import { PaneDispatchContext } from '../workspace/pane-context'
 import { CommandMenu } from '../workspace/CommandMenu'
 import { ErrorBoundary } from '../components/ErrorBoundary'
-import { paneClose, paneSplit, uiTap } from '../lib/sfx'
+import { paneClose, uiTap } from '../lib/sfx'
 import {
   DEFAULT_TILE_FRACTIONS,
   clampFractions,
@@ -80,9 +75,7 @@ import {
 import { fitView, persistedViews, usePanZoom } from '../lib/canvas-nav'
 import { CanvasControls } from '../components/CanvasControls'
 import { Tethers } from './Tethers'
-import { CliBrandBadge } from '../components/CliBrand'
-
-const IS_WIN = window.terrarium?.platform === 'win32'
+import { CliBrandBadge, cliBrand } from '../components/CliBrand'
 
 const STATUS_META: Record<NodeStatus, { color: string; label: string }> = {
   starting: { color: 'var(--color-t3)', label: 'starting' },
@@ -90,14 +83,6 @@ const STATUS_META: Record<NodeStatus, { color: string; label: string }> = {
   idle: { color: 'var(--color-done)', label: 'idle' },
   exited: { color: 'var(--color-error)', label: 'exited' }
 }
-
-const AGENT_CLIS: readonly { label: string; command: string | undefined }[] = [
-  { label: 'Claude', command: 'claude' },
-  { label: 'Codex', command: 'codex' },
-  { label: 'OpenCode', command: 'opencode' },
-  { label: 'Devin', command: 'devin' },
-  { label: 'Shell', command: IS_WIN ? 'powershell.exe' : '/bin/sh' }
-]
 
 const iconBtn =
   'flex h-6 w-6 items-center justify-center rounded-md text-t4 transition-colors hover:bg-n5 hover:text-t1 disabled:pointer-events-none disabled:opacity-30'
@@ -143,7 +128,7 @@ export function OrchestrationTabs() {
   )
 }
 
-/** Canvas ⇄ Workspace switch, + Subagent and Connect for the active network. */
+/** Canvas ⇄ Workspace switch, plus one workspace look per CLI for the active network. */
 export function OrchestrationActions() {
   const networks = useOrch((s) => s.networks)
   const activeId = useOrch((s) => s.activeId)
@@ -151,10 +136,111 @@ export function OrchestrationActions() {
   if (!active) return null
   return (
     <>
+      <CliLooks net={active} />
       <LayoutSwitch />
-      <SpawnButton net={active} />
-      <ConnectButton net={active} />
     </>
+  )
+}
+
+/** Brand id of the CLI a node runs (live-detected when it's a shell with a CLI typed in). */
+function nodeBrandId(node: OrchNode): string {
+  return cliBrand(effectiveCommand(node)).id
+}
+
+/** Re-renders when a shell-bound node's detected CLI changes. */
+function useActivity(): number {
+  return useSyncExternalStore(subscribeActivity, activitySnapshot)
+}
+
+/**
+ * Subagents of a network that pass its CLI look — the orchestrator is
+ * always shown and isn't part of this list.
+ */
+function useVisibleAgents(net: OrchNetwork): OrchNode[] {
+  useActivity()
+  const filter = net.cliFilter
+  return filter ? net.agents.filter((a) => nodeBrandId(a) === filter) : net.agents
+}
+
+/**
+ * One "workspace look" per CLI running in the web: Claude shows the
+ * orchestrator with only its Claude terminals tiled around it, Devin only
+ * the Devin ones. The others keep running — it is a view, not a close.
+ * Picking a CLI flips to the tiled Workspace layout; picking it again (or
+ * All) brings every terminal back.
+ */
+function CliLooks({ net }: { net: OrchNetwork }) {
+  useActivity()
+  const counts = new Map<string, number>()
+  for (const a of net.agents) {
+    const id = nodeBrandId(a)
+    counts.set(id, (counts.get(id) ?? 0) + 1)
+  }
+  // a look whose CLI has no terminals left would strand the view empty
+  const filter = net.cliFilter && counts.has(net.cliFilter) ? net.cliFilter : undefined
+  useEffect(() => {
+    if (net.cliFilter && !filter) useOrch.getState().setCliFilter(net.id, undefined)
+  }, [net.id, net.cliFilter, filter])
+  if (counts.size === 0) return null
+
+  const pick = (id: string | undefined) => {
+    uiTap()
+    const st = useOrch.getState()
+    st.setCliFilter(net.id, id)
+    if (id) st.setLayout('workspace')
+  }
+  const looks = [...counts].map(([id, n]) => ({ brand: cliBrand(id), id, n }))
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Workspace look by CLI"
+      className="mr-1 flex shrink-0 items-center gap-0.5 rounded-lg border border-[var(--border-subtle)] bg-n2 p-0.5"
+    >
+      <LookButton active={!filter} title="Every terminal of this web" onClick={() => pick(undefined)}>
+        All
+        <span className="tnum text-[10px] text-t4">{net.agents.length}</span>
+      </LookButton>
+      {looks.map(({ brand, id, n }) => (
+        <LookButton
+          key={id}
+          active={filter === id}
+          title={`${brand.label} look — the orchestrator with only its ${brand.label} terminals`}
+          onClick={() => pick(filter === id ? undefined : id)}
+        >
+          {brand.mark(12)}
+          {brand.label}
+          <span className="tnum text-[10px] text-t4">{n}</span>
+        </LookButton>
+      ))}
+    </div>
+  )
+}
+
+function LookButton({
+  active,
+  title,
+  onClick,
+  children
+}: {
+  active: boolean
+  title: string
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      title={title}
+      onClick={onClick}
+      className={clsx(
+        'flex h-6 items-center gap-1.5 rounded-md px-2 text-[12px] font-medium transition-colors',
+        active ? 'bg-n4 text-t1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]' : 'text-t3 hover:text-t2'
+      )}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -407,6 +493,13 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
   }, [])
 
   const { W, H } = size
+  // CLI look: the orchestrator plus the subagents running the chosen CLI —
+  // `idx` keeps each one's place in net.agents (ring slot, #number)
+  const visible = useVisibleAgents(net)
+  const shown = useMemo(
+    () => visible.map((node) => ({ node, idx: net.agents.indexOf(node) })),
+    [visible, net.agents]
+  )
   const slotKey = net.agents.map((a, i) => a.slot ?? i).join(',')
   const layout = useMemo(
     () => layoutNetwork(slotKey ? slotKey.split(',').map(Number) : []),
@@ -442,7 +535,7 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
   const boundsRef = useRef(bounds)
   boundsRef.current = bounds
 
-  const expanded = expandedId ? net.agents.find((a) => a.id === expandedId) : undefined
+  const expanded = expandedId ? visible.find((a) => a.id === expandedId) : undefined
   const hasManual = [net.orchestrator, ...net.agents].some((n) => n.pos || n.size)
 
   const pz = usePanZoom(hostRef, {
@@ -552,6 +645,12 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
   )
 
   const sids = useMemo(() => net.agents.map((a) => commandSessionId(a)), [net.agents])
+  // tethers / minimap only draw what is on screen
+  const shownLayout = useMemo(
+    (): NetworkLayout => ({ hub: placed.hub, slots: shown.map(({ idx }) => placed.slots[idx]) }),
+    [placed, shown]
+  )
+  const shownSids = useMemo(() => shown.map(({ idx }) => sids[idx]), [shown, sids])
   // whole pixels — terminal canvases at fractional offsets render soft
   const scaled = (r: Rect): Rect => {
     const x = Math.round(r.x * z)
@@ -569,8 +668,8 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
 
   // Workspace layout: hub in the middle, subagents tiled around it
   const tiles = useMemo(
-    () => (tiled && W > 0 ? tileNetwork(net.agents.length, W, H, fractions) : null),
-    [tiled, W, H, net.agents.length, fractions]
+    () => (tiled && W > 0 ? tileNetwork(shown.length, W, H, fractions) : null),
+    [tiled, W, H, shown.length, fractions]
   )
 
   // gutter drag → resize one band (fraction of the window), saved on release
@@ -648,8 +747,8 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
                 W={W}
                 H={H}
                 z={z}
-                layout={placed}
-                sids={sids}
+                layout={shownLayout}
+                sids={shownSids}
                 dimmed={!!expanded}
                 snap={!!drag || !!resize || zooming}
               />
@@ -671,9 +770,9 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
               onResizeStart={tiles ? undefined : (e) => beginResize(net.orchestrator, placed.hub, e)}
             />
 
-            {net.agents.map((a, i) => {
-              const slot = placed.slots[i]
-              const tile = tiles?.slots[i]
+            {shown.map(({ node: a, idx }, k) => {
+              const slot = placed.slots[idx]
+              const tile = tiles?.slots[k]
               if (!slot) return null
               const isExp = expanded?.id === a.id
               return (
@@ -681,7 +780,7 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
                   key={a.id}
                   net={net}
                   node={a}
-                  index={i + 1}
+                  index={idx + 1}
                   rect={isExp ? expandedScreen : tile ? onScreen(tile) : scaled(slot)}
                   zoom={isExp || tile ? 1 : layoutZoom}
                   expanded={isExp}
@@ -701,7 +800,7 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
               />
             )}
 
-            {net.agents.length === 0 && !tiles && (
+            {shown.length === 0 && !tiles && (
               <div
                 className="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-[var(--border-default)] bg-n2/90 px-3 py-1 text-[11.5px] text-t3 backdrop-blur"
                 style={{
@@ -710,7 +809,7 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
                 }}
               >
                 No subagents yet — the orchestrator spawns them with{' '}
-                <code className="text-accent">tnet spawn</code>, or use <b className="text-t2">+ Subagent</b>
+                <code className="text-accent">tnet spawn</code>
               </div>
             )}
           </div>
@@ -738,9 +837,9 @@ function NetworkCanvas({ net }: { net: OrchNetwork }) {
                 H,
                 items: [
                   { ...placed.hub, hub: true },
-                  ...placed.slots.map((s, i) => ({
+                  ...shownLayout.slots.map((s, i) => ({
                     ...s,
-                    color: STATUS_HEX[nodeStatus(sids[i] ?? '')]
+                    color: STATUS_HEX[nodeStatus(shownSids[i] ?? '')]
                   }))
                 ],
                 onJump: (wx, wy) => setView({ z, x: W / 2 - wx * z, y: H / 2 - wy * z })
@@ -979,16 +1078,6 @@ function NodeCard({
                 title="Brief the orchestrator CLI on how to spawn and drive subagents"
                 onClick={() => writeToNode(sid, orchestratorPrimer(net), { enter: true })}
               />
-              <HubButton
-                icon={<Plus size={11} />}
-                label="Subagent"
-                title="Tether a new subagent to this orchestrator"
-                disabled={net.agents.length >= MAX_AGENTS}
-                onClick={() => {
-                  paneSplit()
-                  useOrch.getState().spawnAgent(net.id)
-                }}
-              />
             </>
           ) : (
             <>
@@ -1130,220 +1219,5 @@ function CompactPreview({ sid, onOpen }: { sid: string; onOpen: () => void }) {
     >
       {text || '…'}
     </button>
-  )
-}
-
-// ── header popovers ───────────────────────────────────────────────────
-
-function usePopover() {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('pointerdown', onDown)
-    return () => window.removeEventListener('pointerdown', onDown)
-  }, [open])
-  return { open, setOpen, ref }
-}
-
-const popoverCls = 'pop-surface pop-in absolute right-0 top-9 z-50 w-[340px] rounded-xl p-3.5'
-
-function SpawnButton({ net }: { net: OrchNetwork }) {
-  const { open, setOpen, ref } = usePopover()
-  const [name, setName] = useState('')
-  const [task, setTask] = useState('')
-  const [custom, setCustom] = useState('')
-  const current = net.agentCommand ?? net.orchestrator.command
-  const full = net.agents.length >= MAX_AGENTS
-
-  const spawn = () => {
-    const node = useOrch.getState().spawnAgent(net.id, {
-      title: name || undefined,
-      task: task || undefined,
-      command: custom.trim() || undefined
-    })
-    if (!node) return
-    paneSplit()
-    setName('')
-    setTask('')
-    setOpen(false)
-  }
-
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        disabled={full}
-        onClick={() => setOpen(!open)}
-        className="btn-accent-soft flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium disabled:opacity-40"
-      >
-        <Plus size={12} />
-        Subagent
-      </button>
-      {open && (
-        <div className={popoverCls}>
-          <p className="micro-label mb-2">Tether a subagent</p>
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name (optional — a Latin one is picked)"
-            className="mb-2 h-7 w-full rounded-md border border-[var(--border-default)] bg-n2 px-2 text-[12px] text-t1 outline-none focus:border-[rgba(245,165,36,0.4)]"
-          />
-          <p className="mb-1 text-[11px] text-t3">CLI — also the default for API spawns</p>
-          <div className="mb-2 flex flex-wrap gap-1">
-            {AGENT_CLIS.map((c) => (
-              <button
-                key={c.label}
-                type="button"
-                onClick={() => {
-                  setCustom('')
-                  useOrch.getState().setAgentCommand(net.id, c.command)
-                }}
-                className={clsx(
-                  'flex h-6 items-center gap-1 rounded-md border px-2 text-[11.5px] transition-colors',
-                  !custom && current === c.command
-                    ? 'border-[rgba(245,165,36,0.45)] bg-[var(--color-accent-subtle)] text-accent'
-                    : 'border-[var(--border-default)] text-t3 hover:text-t1'
-                )}
-              >
-                {!custom && current === c.command && <Check size={10} />}
-                {c.label}
-              </button>
-            ))}
-          </div>
-          <input
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-            placeholder="…or a custom command for this one"
-            className="mb-2 h-7 w-full rounded-md border border-[var(--border-default)] bg-n2 px-2 font-mono text-[11.5px] text-t1 outline-none focus:border-[rgba(245,165,36,0.4)]"
-          />
-          <textarea
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) spawn()
-            }}
-            rows={3}
-            placeholder="First task (typed in once the CLI is ready) — optional"
-            className="mb-2 w-full resize-none rounded-md border border-[var(--border-default)] bg-n2 px-2 py-1.5 text-[12px] text-t1 outline-none focus:border-[rgba(245,165,36,0.4)]"
-          />
-          <button
-            type="button"
-            onClick={spawn}
-            className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-accent text-[12px] font-medium text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
-          >
-            <Sparkles size={12} /> Spawn subagent
-            <span className="text-[10px] opacity-60">Ctrl+Enter</span>
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CopyLine({ text }: { text: string }) {
-  const [done, setDone] = useState(false)
-  return (
-    <div className="group/line flex items-start gap-1.5 rounded bg-n2 px-2 py-1">
-      <code className="min-w-0 flex-1 break-all font-mono text-[11px] leading-4 text-t2">{text}</code>
-      <button
-        type="button"
-        title="Copy"
-        className="shrink-0 text-t4 hover:text-t1"
-        onClick={() => {
-          void navigator.clipboard?.writeText(text).then(() => {
-            setDone(true)
-            setTimeout(() => setDone(false), 1200)
-          })
-        }}
-      >
-        {done ? <Check size={11} /> : <Copy size={11} />}
-      </button>
-    </div>
-  )
-}
-
-function ConnectButton({ net }: { net: OrchNetwork }) {
-  const { open, setOpen, ref } = usePopover()
-  const host = orchHostInfo()
-  const sid = commandSessionId(net.orchestrator)
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        title="How the orchestrator drives this network (tnet · MCP · HTTP)"
-        className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-n3 px-2.5 text-[12px] font-medium text-t2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:border-[var(--border-strong)] hover:bg-n4 hover:text-t1"
-      >
-        <Cable size={12} />
-        Connect
-      </button>
-      {open && (
-        <div className={clsx(popoverCls, 'w-[420px]')}>
-          <p className="micro-label mb-1.5">Orchestrator toolkit</p>
-          <p className="mb-2 text-[11.5px] leading-4 text-t3">
-            The orchestrator terminal already carries <code className="text-t2">TERRARIUM_SID</code>,{' '}
-            <code className="text-t2">TERRARIUM_NET</code> and{' '}
-            <code className="text-t2">TERRARIUM_WS_CMD</code> — every call below lands in{' '}
-            <b className="text-t2">{networkLabel(net)}</b>.
-          </p>
-
-          <p className="mb-1 text-[11px] font-medium text-t2">tnet CLI {host ? '(on PATH)' : ''}</p>
-          {host ? (
-            <div className="mb-2 space-y-1">
-              <CopyLine text={'tnet spawn --cli claude --name Scout "map the auth flow"'} />
-              <CopyLine text={'tnet ask Scout "summarise what you found"'} />
-              <CopyLine text="tnet ls  ·  tnet read 1  ·  tnet wait all  ·  tnet kill 1" />
-            </div>
-          ) : (
-            <p className="mb-2 rounded bg-n2 px-2 py-1 text-[11px] text-t3">
-              Restart the app once to install <code>tnet</code> on network terminals' PATH — the HTTP
-              and MCP routes below already work.
-            </p>
-          )}
-
-          <p className="mb-1 text-[11px] font-medium text-t2">MCP (terrarium-mcp)</p>
-          <p className="mb-2 text-[11px] leading-4 text-t3">
-            <code className="text-t2">orchestrator_info · _spawn · _send · _ask · _read · _wait · _kill</code>{' '}
-            — started from the orchestrator they auto-target this network.
-          </p>
-
-          <p className="mb-1 text-[11px] font-medium text-t2">Raw HTTP</p>
-          <div className="mb-3">
-            <CopyLine
-              text={
-                IS_WIN
-                  ? `irm $env:TERRARIUM_WS_CMD -Method Post -Body (@{cmd='net.info';sid=$env:TERRARIUM_SID}|ConvertTo-Json)`
-                  : `curl -s $TERRARIUM_WS_CMD -d '{"cmd":"net.info","sid":"'$TERRARIUM_SID'"}'`
-              }
-            />
-          </div>
-
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                writeToNode(sid, orchestratorPrimer(net), { enter: true })
-                setOpen(false)
-              }}
-              className="flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md bg-accent text-[12px] font-medium text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]"
-            >
-              <Zap size={12} /> Prime orchestrator
-            </button>
-            <button
-              type="button"
-              onClick={() => void navigator.clipboard?.writeText(orchestratorPrimer(net))}
-              className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] px-2.5 text-[12px] text-t2 hover:text-t1"
-            >
-              <Copy size={12} /> Primer
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
   )
 }

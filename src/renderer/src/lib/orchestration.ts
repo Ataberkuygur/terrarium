@@ -23,6 +23,7 @@ import { commandSessionId, newPaneId, type PaneLeaf } from './panes'
 import { getPty } from './ipc'
 import { paneBridgeCmdUrl } from './pane-bridge'
 import { randomLatinName } from './latin-names'
+import { settleSessionCwd } from './session-cwd'
 import { useApp } from './store'
 
 // ── types ─────────────────────────────────────────────────────────────
@@ -59,6 +60,14 @@ export interface OrchNetwork {
   agents: OrchNode[]
   /** CLI new subagents run when the caller doesn't pick one. */
   agentCommand?: string
+  /**
+   * Workspace look by CLI: brand id ('claude', 'devin'…) — only the
+   * orchestrator and the subagents running that CLI are shown. The rest
+   * keep running in the supervisor. Unset = every subagent. A view choice
+   * for this session only — load() doesn't restore it (a shell-bound
+   * node's CLI isn't detected yet at launch).
+   */
+  cliFilter?: string
   createdAt: number
 }
 
@@ -374,6 +383,8 @@ interface OrchState {
   setNetworkTopic(id: string, topic: string): void
   setActive(id: string): void
   setAgentCommand(netId: string, command: string | undefined): void
+  /** Show only the subagents running this CLI brand (undefined = all). */
+  setCliFilter(netId: string, cli: string | undefined): void
   spawnAgent(netId: string, opts?: SpawnAgentOpts): OrchNode | null
   removeAgent(netId: string, nodeId: string): void
   updateNode(nodeId: string, patch: Partial<Omit<PaneLeaf, 'type' | 'id'>>): void
@@ -470,6 +481,13 @@ export const useOrch = create<OrchState>((set, get) => ({
   setAgentCommand(netId, command) {
     const c = command?.trim() || undefined
     set({ networks: mapNetwork(get().networks, netId, (n) => ({ ...n, agentCommand: c })) })
+  },
+
+  setCliFilter(netId, cli) {
+    set({
+      networks: mapNetwork(get().networks, netId, (n) => ({ ...n, cliFilter: cli || undefined })),
+      expandedId: null
+    })
   },
 
   spawnAgent(netId, opts = {}) {
@@ -1185,6 +1203,8 @@ async function restoreNodes(): Promise<void> {
           cwd = hit.cwd ?? cwd
         }
       }
+      // the respawn starts in the session's own folder
+      if (id) cwd = await settleSessionCwd(r.cli, id, cwd)
       patch.set(node.id, id ? { ...r, id, cwd, pid: undefined } : { ...r, active: false })
       if (id) toSpawn.push(node.id)
     }
@@ -1306,11 +1326,8 @@ async function sleepNode(node: OrchNode): Promise<void> {
     const cur = findNode(node.id)?.node.resume
     if (!cur?.slept) return // woken meanwhile
     const id = hit?.id ?? cur.id
-    setResumes(
-      new Map([
-        [node.id, { ...cur, id, cwd: hit?.cwd ?? cur.cwd, pid: undefined, active: !!id }]
-      ])
-    )
+    const cwd = await settleSessionCwd(r.cli, id, hit?.cwd ?? cur.cwd)
+    setResumes(new Map([[node.id, { ...cur, id, cwd, pid: undefined, active: !!id }]]))
     if (!id) console.warn(`[orchestration] ${node.title ?? node.id}: devin session not found — wake starts it fresh`)
   } finally {
     falling.delete(node.id)
