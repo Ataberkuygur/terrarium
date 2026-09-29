@@ -15,7 +15,7 @@ declare global {
       pty?: PtyBridge
       platform?: string
       detectClis?: () => Promise<unknown>
-      pickFolder?: () => Promise<string | null>
+      pickFolder?: (startAt?: string) => Promise<string | null>
       jevKey?: {
         status: () => Promise<JevKeyStatus>
         set: (key: string) => Promise<JevKeyStatus>

@@ -5,6 +5,7 @@ import type { PaneLeaf, SplitDir } from '../lib/panes'
 import { DOMAIN_LABELS } from '../lib/terminal-classify'
 import { PANE_META } from './EmptyPane'
 import { CommandMenu } from './CommandMenu'
+import { FolderMenu } from './FolderMenu'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { cliBrand } from '../components/CliBrand'
 import { isShellCommand, useLiveCli } from '../lib/live-cli'
@@ -88,6 +89,7 @@ export function PaneFrame({
   // CommandMenu open state lives here so the hover-revealed controls stay
   // visible while its popover is up (the popover is inside that container).
   const [cmdOpen, setCmdOpen] = useState(false)
+  const [folderOpen, setFolderOpen] = useState(false)
 
   return (
     <div
@@ -183,6 +185,11 @@ export function PaneFrame({
         )}
 
         <span className="flex-1" />
+
+        {/* the pinned project folder stays visible; the icon alone is hover-only */}
+        {leaf.kind === 'terminal' && (
+          <FolderMenu leaf={leaf} open={folderOpen} onOpenChange={setFolderOpen} />
+        )}
 
         {/* hover controls — forced visible while the command menu is open
             so its popover isn't faded out with the buttons */}

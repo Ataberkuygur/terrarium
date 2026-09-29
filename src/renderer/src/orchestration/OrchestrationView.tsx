@@ -57,6 +57,7 @@ import {
 import { Terminal, getPtyBridge } from '../terminal'
 import { PaneDispatchContext } from '../workspace/pane-context'
 import { CommandMenu } from '../workspace/CommandMenu'
+import { FolderMenu } from '../workspace/FolderMenu'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { paneClose, uiTap } from '../lib/sfx'
 import {
@@ -979,6 +980,7 @@ function NodeCard({
   onResizeStart?: (e: React.PointerEvent) => void
 }) {
   const [cmdOpen, setCmdOpen] = useState(false)
+  const [folderOpen, setFolderOpen] = useState(false)
   const hub = node.role === 'orchestrator'
   const sid = commandSessionId(node)
   // startup resume in flight — mounting now would spawn a fresh CLI
@@ -1066,9 +1068,10 @@ function NodeCard({
         <div
           className={clsx(
             'flex min-w-0 items-center justify-end gap-0.5',
-            !hub && !cmdOpen && 'opacity-0 transition-opacity group-hover/card:opacity-100'
+            !hub && !cmdOpen && !folderOpen && 'opacity-0 transition-opacity group-hover/card:opacity-100'
           )}
         >
+          <FolderMenu leaf={node} open={folderOpen} onOpenChange={setFolderOpen} bare />
           <CommandMenu leaf={node} open={cmdOpen} onOpenChange={setCmdOpen} className={iconBtn} />
           {hub ? (
             <>

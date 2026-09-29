@@ -293,7 +293,7 @@ const api = {
   engine,
   pty,
   detectClis: () => ipcRenderer.invoke('agents:detect'),
-  pickFolder: () => ipcRenderer.invoke('dialog:pickFolder') as Promise<string | null>,
+  pickFolder: (startAt?: string) => ipcRenderer.invoke('dialog:pickFolder', startAt) as Promise<string | null>,
   setProjectRoot: (projectId: string, rootPath: string) =>
     ipcRenderer.invoke(IPC.projectSetRoot, projectId, rootPath) as Promise<void>,
   /** Past sessions of a resumable CLI (claude/codex/opencode/…) for the pane's cwd. */

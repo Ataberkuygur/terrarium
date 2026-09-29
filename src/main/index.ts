@@ -6,6 +6,7 @@ import { resolve } from 'path'
 import { IPC } from '../shared/ipc'
 import { createEngine } from './engine/engine'
 import { createPtyManager, registerPtyIpc } from './pty/manager'
+import { repairProcessEnv } from './pty/win-env'
 import { detectAgentClis } from './git/detect'
 import * as wt from './git/worktrees'
 import { initWiki, getWiki, closeAllWikis } from './wiki/index'
@@ -34,6 +35,12 @@ import QRCode from 'qrcode'
  * Subsystems live in engine/ (SQLite office record), pty/ (utilityProcess host),
  * git/ (worktrees + CLI detection), wiki/ (vault + watcher).
  */
+
+// Started by an installer/launcher that never saw the user's PATH, the app
+// carries the machine Path only — `claude` (~/.local/bin) and every user-level
+// CLI would be "not recognized" in each pane. Repair it once, before the pty
+// supervisor and any other child inherits it.
+repairProcessEnv()
 
 // Perf: native Win occlusion tracking throttles rAF to ~1fps whenever any
 // window overlaps ours — feels like random jank in the office view. Chrome
@@ -379,8 +386,10 @@ async function boot(): Promise<void> {
   ipcMain.handle(IPC.projectSetRoot, (_e, projectId, rootPath) =>
     engine.setProjectRoot(projectId, rootPath)
   )
-  ipcMain.handle('dialog:pickFolder', async () => {
-    const r = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+  ipcMain.handle('dialog:pickFolder', async (_e, startAt?: unknown) => {
+    // optional start folder — a terminal's picker opens where it already is
+    const defaultPath = typeof startAt === 'string' && startAt.trim() ? startAt.trim() : undefined
+    const r = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'], defaultPath })
     return r.canceled ? null : (r.filePaths[0] ?? null)
   })
   // ── wiki: real vault index when available, engine docs table otherwise ──

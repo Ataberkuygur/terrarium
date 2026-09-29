@@ -134,6 +134,8 @@ export function noteResumeBounce(leaf: PaneLeaf, sid: string, data: string, proj
     // re-read: the leaf may have been rebound/closed meanwhile
     const live = paneLeafById(leaf.id)
     if (!dir || !dispatch || live?.kind !== 'terminal' || commandSessionId(live) !== sid) return
+    // a terminal the user pinned to a folder stays there — only they move it
+    if (live.folder?.trim()) return
     claimLeafCommand(dispatch, live, `claude --resume ${bounce.id}`, dir)
   })()
 }

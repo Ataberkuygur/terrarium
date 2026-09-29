@@ -19,7 +19,7 @@ import type { PaneCmdEnvelope, PaneCmdResult } from '@shared/pane-bridge'
 import type { PtySpawnOpts } from '@shared/pty'
 import { isResumableCli, resumeSpawnCommand, type NodeResume } from '@shared/cli-resume'
 import { cliFromCommandLine } from '@shared/cli-detect'
-import { commandSessionId, newPaneId, type PaneLeaf } from './panes'
+import { commandSessionId, leafCwd, newPaneId, type PaneLeaf } from './panes'
 import { getPty } from './ipc'
 import { paneBridgeCmdUrl } from './pane-bridge'
 import { randomLatinName } from './latin-names'
@@ -134,7 +134,14 @@ function projectRoot(): string | undefined {
 
 function makeNode(
   role: OrchRole,
-  opts: { title?: string; command?: string; cwd?: string; task?: string; by?: 'user' | 'api' }
+  opts: {
+    title?: string
+    command?: string
+    cwd?: string
+    folder?: string
+    task?: string
+    by?: 'user' | 'api'
+  }
 ): OrchNode {
   return {
     type: 'leaf',
@@ -144,6 +151,7 @@ function makeNode(
     title: opts.title,
     command: opts.command?.trim() || undefined,
     cwd: opts.cwd?.trim() || undefined,
+    folder: opts.folder?.trim() || undefined,
     role,
     task: opts.task?.trim() || undefined,
     by: opts.by ?? 'user',
@@ -190,7 +198,7 @@ export function nodeSpawnOpts(node: OrchNode, net: OrchNetwork): PtySpawnOpts {
   const resumed = r?.active && r.id ? resumeSpawnCommand(base, isShellCommand(node.command), { ...r, id: r.id }) : null
   return {
     sessionId: sid,
-    cwd: (resumed && r?.cwd?.trim()) || node.cwd?.trim() || projectRoot() || '.',
+    cwd: (resumed && r?.cwd?.trim()) || leafCwd(node) || projectRoot() || '.',
     env,
     ...splitCommand(resumed ?? base)
   }
@@ -232,6 +240,7 @@ function normNode(raw: unknown, role: OrchRole, keepLayout = true): OrchNode | n
     title: s(n.title),
     command: s(n.command),
     cwd: s(n.cwd),
+    folder: s(n.folder),
     role,
     task: s(n.task),
     by: n.by === 'api' ? 'api' : 'user',
@@ -499,6 +508,8 @@ export const useOrch = create<OrchState>((set, get) => ({
       title: opts.title?.trim() || randomLatinName(takenTitles(net)),
       command,
       cwd: opts.cwd ?? net.orchestrator.cwd,
+      // subagents work in the folder the orchestrator was pinned to
+      folder: opts.cwd ? undefined : net.orchestrator.folder,
       task: opts.task,
       by: opts.by
     })
@@ -1334,6 +1345,51 @@ async function sleepNode(node: OrchNode): Promise<void> {
   }
 }
 
+// ── close sleepers ────────────────────────────────────────────────────
+// A sleeping card is a dead pty wearing a "Uyuyor" label — it still takes a
+// slot on the canvas and a row in every list. After a short while asleep the
+// node is closed for good: card gone, pty already down. (The CLI's own
+// session store keeps the conversation; History can reopen it.) Only
+// subagents — closing an orchestrator would take its whole network with it.
+
+const AUTO_CLOSE_KEY = 'terrarium.autoCloseAsleepMin'
+export const AUTO_CLOSE_ASLEEP_DEFAULT_MIN = 2
+const AUTO_CLOSE_EVERY_MS = 15_000
+
+/** Minutes a node may sleep before it is closed; 0 = never. */
+export function autoCloseAsleepMinutes(): number {
+  try {
+    const raw = localStorage.getItem(AUTO_CLOSE_KEY)
+    if (raw === null) return AUTO_CLOSE_ASLEEP_DEFAULT_MIN
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : 0
+  } catch {
+    return AUTO_CLOSE_ASLEEP_DEFAULT_MIN
+  }
+}
+
+export function setAutoCloseAsleepMinutes(min: number): void {
+  try {
+    localStorage.setItem(AUTO_CLOSE_KEY, String(Math.max(0, Math.round(min))))
+  } catch {
+    /* storage blocked — the default stays */
+  }
+}
+
+function closeSleepers(): void {
+  const min = autoCloseAsleepMinutes()
+  if (!min || useOrch.getState().restoring) return
+  const now = Date.now()
+  for (const net of useOrch.getState().networks) {
+    for (const node of net.agents) {
+      const since = node.resume?.slept
+      // still resolving its session after the kill — let sleepNode finish
+      if (!since || falling.has(node.id)) continue
+      if (now - since >= min * 60_000) useOrch.getState().removeAgent(net.id, node.id)
+    }
+  }
+}
+
 /** Bring a sleeping node back in its session; no-op for an awake one. */
 export async function wakeNode(nodeId: string): Promise<void> {
   while (falling.has(nodeId)) await sleep(300)
@@ -1377,6 +1433,7 @@ void (async () => {
   setTimeout(() => void autoTopics(), 15_000)
   setInterval(() => void autoTopics(), TOPIC_EVERY_MS)
   setInterval(autoSleep, AUTO_SLEEP_EVERY_MS)
+  setInterval(closeSleepers, AUTO_CLOSE_EVERY_MS)
 })()
 
 export function nodeStatus(sid: string, now = Date.now()): NodeStatus {

@@ -7,9 +7,9 @@
 // node-pty must stay external — it's a native N-API module loaded from
 // node_modules at runtime.
 
-import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { homedir } from 'node:os'
 import type { IPty } from 'node-pty'
 import {
   PTY_ATTACH_RESET_SEQ,
@@ -20,6 +20,15 @@ import {
   type PtySpawnOpts
 } from '../../shared/pty'
 import type { PtyHostRequest, PtyHostResponse } from './protocol'
+import {
+  envKey,
+  freshWindowsEnv,
+  knownShell,
+  mergePaths,
+  resolveOnPath,
+  setEnv,
+  type Env
+} from './win-env'
 
 // node-pty is a native N-API module — it must be loaded from node_modules,
 // never bundled. createRequire bypasses the bundler regardless of whether
@@ -27,6 +36,23 @@ import type { PtyHostRequest, PtyHostResponse } from './protocol'
 // walking up from this file (dev) or the app resources path (packaged).
 const req = createRequire(__filename)
 const { spawn: ptySpawn } = req('node-pty') as typeof import('node-pty')
+
+// A stray socket/stdio error must not take the supervisor — and with it every
+// live pane — down. (The log once ended in an unhandled 'write EAGAIN'.)
+process.on('uncaughtException', (err) => {
+  try {
+    console.error(`[pty-host] uncaught: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`)
+  } catch {
+    /* even logging can fail — survive regardless */
+  }
+})
+process.on('unhandledRejection', (reason) => {
+  try {
+    console.error(`[pty-host] unhandled rejection: ${String(reason)}`)
+  } catch {
+    /* ignore */
+  }
+})
 
 // ── tunables ─────────────────────────────────────────────────────────
 
@@ -261,23 +287,6 @@ function quoteArg(arg: string): string {
   return `"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1')}"`
 }
 
-/** `where.exe` lookup — finds .cmd/.bat/.exe shims on PATH. Returns [] on failure. */
-function where(name: string): string[] {
-  try {
-    const out = execFileSync('where.exe', [name], {
-      encoding: 'utf8',
-      timeout: 3000,
-      windowsHide: true
-    })
-    return out
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0 && existsSync(l))
-  } catch {
-    return []
-  }
-}
-
 /** Wrap a batch/shim target in `cmd.exe /d /s /c ""<file>" <args>"`. */
 function cmdLaunch(target: string, args: string[]): Launch {
   const inner = [quoteArg(target), ...args.map(quoteArg)].join(' ')
@@ -292,7 +301,7 @@ function cmdLaunch(target: string, args: string[]): Launch {
   }
 }
 
-function resolveLaunch(command: string, args: string[]): Launch {
+function resolveLaunch(command: string, args: string[], env: Env): Launch {
   if (process.platform !== 'win32') {
     return { file: command, args, resolved: null, viaCmd: false }
   }
@@ -306,8 +315,9 @@ function resolveLaunch(command: string, args: string[]): Launch {
     return { file: command, args, resolved: command, viaCmd: false }
   }
 
-  // Bare name — ask where.exe what it resolves to (PATHEXT-aware).
-  const found = where(command)
+  // Bare name — resolve along the SAME Path the pane will get (a stale
+  // supervisor env must not decide what 'claude' means).
+  const found = resolveOnPath(command, env)
   const exe = found.find((f) => /\.exe$/i.test(f))
   const batch = found.find((f) => /\.(cmd|bat)$/i.test(f))
   const ps1 = found.find((f) => /\.ps1$/i.test(f))
@@ -324,7 +334,11 @@ function resolveLaunch(command: string, args: string[]): Launch {
   }
   if (found.length > 0) return { file: found[0], args, resolved: found[0], viaCmd: false }
 
-  // where.exe found nothing — let cmd.exe try PATH/PATHEXT itself.
+  // The two shells always exist, PATH or not.
+  const shell = knownShell(command, env)
+  if (shell) return { file: shell, args, resolved: shell, viaCmd: false }
+
+  // Nothing found — let cmd.exe try PATH/PATHEXT itself.
   return cmdLaunch(command, args)
 }
 
@@ -338,15 +352,26 @@ function resolveLaunch(command: string, args: string[]): Launch {
  * and would break any Electron app started from a pane. */
 const LAUNCHER_ENV = /^(CLAUDECODE$|CLAUDE_CODE_|CLAUDE_AGENT_SDK_|CLAUDE_PID$|CLAUDE_EFFORT$|CLAUDE_PREVIEW_|ELECTRON_RUN_AS_NODE$|TERRARIUM_PTY_HOST_PORT$|NO_COLOR$)/i
 
-function buildEnv(opts: Required<PtySpawnOpts>): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const [k, v] of Object.entries(process.env)) {
+function buildEnv(opts: Required<PtySpawnOpts>): Env {
+  const env: Env = {}
+  // Windows: the supervisor's own env may be years stale or launcher-stripped
+  // (machine Path only) — rebuild it from the registry so every pane sees the
+  // user's PATH like a fresh login would.
+  const base = process.platform === 'win32' ? freshWindowsEnv(process.env) : process.env
+  for (const [k, v] of Object.entries(base)) {
     if (typeof v === 'string' && !LAUNCHER_ENV.test(k)) env[k] = v
   }
   if (env.FORCE_COLOR === '0') delete env.FORCE_COLOR
   env.TERM = 'xterm-256color'
   env.COLORTERM = 'truecolor'
-  for (const [k, v] of Object.entries(opts.env)) env[k] = v
+  // caller overrides win, matched case-insensitively on Windows (PATH vs Path)
+  // — except Path, which is merged: a caller's stale copy must not drop the
+  // user's dirs we just rebuilt
+  for (const [k, v] of Object.entries(opts.env)) {
+    if (process.platform !== 'win32') env[k] = v
+    else if (k.toLowerCase() === 'path') setEnv(env, k, mergePaths(v, env[envKey(env, 'Path') ?? ''] ?? ''))
+    else setEnv(env, k, v)
+  }
   return env
 }
 
@@ -370,7 +395,8 @@ function handleSpawn(id: number, rawOpts: PtySpawnOpts): void {
     return
   }
 
-  const launch = resolveLaunch(opts.command, opts.args)
+  const env = buildEnv(opts)
+  const launch = resolveLaunch(opts.command, opts.args, env)
   const s: PtySession = {
     opts,
     pty: null,
@@ -386,13 +412,16 @@ function handleSpawn(id: number, rawOpts: PtySpawnOpts): void {
   }
   sessions.set(opts.sessionId, s)
 
+  // A pinned folder can be deleted or unplugged — open in home rather than
+  // leave a dead pane, and say so in the pane.
+  const cwdOk = !!opts.cwd && existsSync(opts.cwd)
   try {
     const pty = ptySpawn(launch.file, launch.args, {
       name: 'xterm-256color',
       cols: opts.cols,
       rows: opts.rows,
-      cwd: opts.cwd,
-      env: buildEnv(opts),
+      cwd: cwdOk ? opts.cwd : homedir(),
+      env,
       useConpty: true,
       useConptyDll: true,
       conptyInheritCursor: true
@@ -413,6 +442,12 @@ function handleSpawn(id: number, rawOpts: PtySpawnOpts): void {
 
     send({ t: 'spawned', id, sessionId: opts.sessionId, info: sessionInfo(s) })
     send({ t: 'status', sessionId: opts.sessionId, status: 'running' })
+    if (!cwdOk) {
+      enqueueOutput(
+        s,
+        `\x1b[33m[Terrarium] Klasör bulunamadı: ${opts.cwd} — ana klasörde açıldı.\x1b[0m\r\n`
+      )
+    }
   } catch (err) {
     s.status = 'exited'
     s.exitCode = -1

@@ -1,4 +1,4 @@
-import { commandSessionId, type PaneLeaf } from './panes'
+import { commandSessionId, leafCwd, type PaneLeaf } from './panes'
 import { EmptyPane } from '../workspace/EmptyPane'
 import { ChatPane } from '../workspace/ChatPane'
 import { BrowserPane } from '../workspace/BrowserPane'
@@ -117,7 +117,7 @@ function WorkspaceTerminal({ leaf, projectRoot }: { leaf: PaneLeaf; projectRoot?
       onTitle={(title) => noteTerminalTitle(sid, title)}
       spawnOpts={{
         sessionId: sid,
-        cwd: run.cwd?.trim() || leaf.cwd?.trim() || projectRoot || '.',
+        cwd: run.cwd?.trim() || leafCwd(leaf) || projectRoot || '.',
         env,
         ...splitCommand(run.command)
       }}

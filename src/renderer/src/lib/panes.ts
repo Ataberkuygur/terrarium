@@ -58,6 +58,14 @@ export interface PaneLeaf {
    */
   cwd?: string
   /**
+   * Project folder the user assigned to this terminal. Sticky: saved with the
+   * layout and never touched by anything but the user's own pick (the folder
+   * menu in the pane header). It is where the pty starts whenever no
+   * session-specific `cwd` says otherwise, and it survives rebinding the
+   * command. Empty = follow the project root.
+   */
+  folder?: string
+  /**
    * Scope binding for `browser` leaves — id of the terminal leaf this pane
    * is driven by. Set at spawn time when a terminal was focused; absent =
    * general browser. The pane shows a scope chip and its prompt bar types
@@ -137,6 +145,7 @@ export function createLeaf(
     agentId?: string
     command?: string
     cwd?: string
+    folder?: string
     bindLeafId?: string
     domain?: AgentDomain
     category?: string
@@ -151,6 +160,7 @@ export function createLeaf(
     agentId: opts.agentId,
     command: opts.command,
     cwd: opts.cwd,
+    folder: opts.folder,
     bindLeafId: opts.bindLeafId,
     domain: opts.domain,
     category: opts.category
@@ -177,6 +187,16 @@ export function commandSessionKey(
 }
 
 /**
+ * The directory a terminal leaf's pty starts in, ahead of the project-root
+ * fallback: a session-specific `cwd` (a resumed transcript's own folder)
+ * wins, else the folder the user assigned. Part of the session id, so
+ * moving a pane to another folder spawns a fresh pty there.
+ */
+export function leafCwd(leaf: Pick<PaneLeaf, 'cwd' | 'folder'>): string | undefined {
+  return leaf.cwd?.trim() || leaf.folder?.trim() || undefined
+}
+
+/**
  * Terminal session id ← command binding. Sessions key off the leaf id;
  * folding the bound command into it means picking a different CLI changes
  * `sid` → the Terminal spawns a fresh pty instead of reattaching to the
@@ -185,7 +205,7 @@ export function commandSessionKey(
  * render-leaf (spawn) and BrowserPane (boundSid for the pane bridge).
  */
 export function commandSessionId(leaf: PaneLeaf): string {
-  const key = commandSessionKey(leaf.command, leaf.cwd)
+  const key = commandSessionKey(leaf.command, leafCwd(leaf))
   return key ? `${leaf.id}:${key}` : leaf.id
 }
 
@@ -655,6 +675,7 @@ function normalizeNode(
       agentId: typeof n.agentId === 'string' ? n.agentId : undefined,
       command: typeof n.command === 'string' ? n.command : undefined,
       cwd: typeof n.cwd === 'string' ? n.cwd : undefined,
+      folder: typeof n.folder === 'string' && n.folder.trim() ? n.folder.trim() : undefined,
       bindLeafId: typeof n.bindLeafId === 'string' ? n.bindLeafId : undefined,
       domain: isAgentDomain(n.domain) ? n.domain : undefined,
       // free-form, but blank/whitespace means unset
@@ -741,6 +762,7 @@ export function cloneTree(tree: PaneNode): PaneNode {
         agentId: n.agentId,
         command: n.command,
         cwd: n.cwd,
+        folder: n.folder,
         bindLeafId: n.bindLeafId ? idMap.get(n.bindLeafId) : undefined,
         category: n.category
       }

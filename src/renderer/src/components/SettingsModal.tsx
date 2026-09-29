@@ -28,7 +28,12 @@ import clsx from 'clsx'
 import { Globe, KeyRound, Moon, RefreshCw, ZoomIn } from 'lucide-react'
 import type { UpdateStatus } from '@shared/updater'
 import type { BrowserMcpStatus } from '@shared/browser-mcp'
-import { autoSleepMinutes, setAutoSleepMinutes } from '../lib/orchestration'
+import {
+  autoCloseAsleepMinutes,
+  autoSleepMinutes,
+  setAutoCloseAsleepMinutes,
+  setAutoSleepMinutes
+} from '../lib/orchestration'
 import type { JevKeyStatus } from '@shared/jev'
 import {
   APP_ZOOM_MAX,
@@ -742,6 +747,8 @@ function ResourceSection() {
   const [mcpStatus, setMcpStatus] = useState<BrowserMcpStatus | null>(null)
   const [mcpBusy, setMcpBusy] = useState(false)
   const sleepOptions = [0, 10, 15, 30, 60]
+  const [closeMin, setCloseMin] = useState(autoCloseAsleepMinutes)
+  const closeOptions = [0, 1, 2, 5, 10]
 
   useEffect(() => {
     void mcp?.status().then(setMcpStatus).catch(() => {})
@@ -789,6 +796,38 @@ function ResourceSection() {
           {sleepMin
             ? `${sleepMin} dk boşta kalan Devin kapanır; kartına tıklayınca ya da tnet send ile aynı oturumda uyanır`
             : 'Boştaki Devin ajanları açık kalır'}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 px-5 pb-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-n3 text-accent ring-1 ring-[var(--border-subtle)] ring-inset">
+          <X size={14} />
+        </span>
+        <div className="w-36 shrink-0">
+          <div className="text-[12.5px] font-medium text-t1">Uyuyanı kapat</div>
+          <div className="text-[11px] leading-snug text-t4">Uyuyan terminal kartı</div>
+        </div>
+        <div className="seg-track h-7 shrink-0 gap-0.5">
+          {closeOptions.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setCloseMin(m)
+                setAutoCloseAsleepMinutes(m)
+              }}
+              className={clsx(
+                'tnum h-[22px] rounded-[7px] px-2.5 text-[11.5px] transition-colors',
+                closeMin === m ? segOn : 'text-t3 hover:text-t1'
+              )}
+            >
+              {m ? `${m} dk` : 'Kapalı'}
+            </button>
+          ))}
+        </div>
+        <span className="min-w-0 flex-1 text-[11px] leading-snug text-t4">
+          {closeMin
+            ? `Uyuyan ajan ${closeMin} dk sonra tamamen kapanır (kart silinir, oturum CLI geçmişinde kalır)`
+            : 'Uyuyan ajanlar kartında açık kalır'}
         </span>
       </div>
       <div className="flex items-center gap-3 px-5 pb-3.5">

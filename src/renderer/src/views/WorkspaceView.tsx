@@ -389,12 +389,15 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
       const focusedLeaf = focus ? findLeaf(tree, focus) : null
       const bindLeafId =
         kind === 'browser' && focusedLeaf?.kind === 'terminal' ? focusedLeaf.id : undefined
+      const target = targetId ?? focus ?? firstLeaf(tree)?.id ?? null
+      // a terminal split off a pinned terminal starts in the same folder
+      const source = target ? findLeaf(tree, target) : null
       const leaf = createLeaf(kind, {
         title: title ?? nextTitle(kind),
         agentId,
-        bindLeafId
+        bindLeafId,
+        folder: kind === 'terminal' && source?.kind === 'terminal' ? source.folder : undefined
       })
-      const target = targetId ?? focus ?? firstLeaf(tree)?.id ?? null
       if (tree && target) {
         dispatch({ type: 'split', leafId: target, dir, leaf })
       } else {
@@ -465,6 +468,7 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
             title: l.title,
             command: l.command,
             cwd: l.cwd,
+            folder: l.folder,
             domain: l.domain,
             category: l.category,
             sid: l.kind === 'terminal' ? commandSessionId(l) : undefined,
@@ -490,15 +494,18 @@ export function WorkspaceView(props: WorkspaceViewProps = {}) {
               ? bindTarget
               : undefined
             : undefined
+        const target = targetId ?? focusRef.current ?? firstLeaf(t)?.id ?? null
+        const source = target ? findLeaf(t, target) : null
         const leaf = createLeaf(kind, {
           title: opts.title ?? nextTitle(kind),
           agentId: opts.agentId,
           command: opts.command,
           cwd: opts.cwd,
+          folder:
+            kind === 'terminal' && !opts.cwd && source?.kind === 'terminal' ? source.folder : undefined,
           refId: opts.url ?? null,
           bindLeafId
         })
-        const target = targetId ?? focusRef.current ?? firstLeaf(t)?.id ?? null
         if (t && target) {
           dispatch({ type: 'split', leafId: target, dir: opts.dir ?? 'row', leaf })
         } else {

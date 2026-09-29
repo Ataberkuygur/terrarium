@@ -23,6 +23,7 @@ import {
   collectLeaves,
   commandSessionId,
   deserializePanes,
+  leafCwd,
   serializePanes,
   updateLeaf,
   type PaneLeaf
@@ -180,7 +181,7 @@ function signatureFor(leaf: PaneLeaf, card: TaskCard | undefined): string {
 /** Everything except the scrollback — cheap, no IPC. */
 function baseContext(leaf: PaneLeaf, cards: TaskCard[]): { ctx: LeafContext; sig: string } {
   const card = cardForLeaf(cards, leaf)
-  const cwd = leaf.cwd?.trim() || useApp.getState().projects[0]?.rootPath || ''
+  const cwd = leafCwd(leaf) || useApp.getState().projects[0]?.rootPath || ''
   const cwdBase = cwd.split(/[\\/]/).filter(Boolean).pop() ?? ''
   return {
     ctx: {

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Agent, AgentDomain, TaskCard } from '@shared/types'
 import type { PtySessionInfo, PtySessionStatus, PtySpawnOpts } from '@shared/pty'
 import { cliName } from '@shared/cli-sessions'
-import { commandSessionId, type PaneLeaf } from './panes'
+import { commandSessionId, leafCwd, type PaneLeaf } from './panes'
 import { getAllTerminalLeaves } from './terminal-agents'
 import { paneBridgeCmdUrl } from './pane-bridge'
 import { scheduleDomainClassification } from './terminal-classify'
@@ -224,7 +224,7 @@ function spawnOptsFor(worker: TerminalWorker): PtySpawnOpts {
   }
   return {
     sessionId: worker.sid,
-    cwd: leaf.cwd?.trim() || useApp.getState().projects[0]?.rootPath || '.',
+    cwd: leafCwd(leaf) || useApp.getState().projects[0]?.rootPath || '.',
     env,
     ...splitCommand(
       bound || (window.terrarium?.platform === 'win32' ? 'powershell.exe' : '/bin/sh')

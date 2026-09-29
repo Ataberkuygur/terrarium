@@ -190,7 +190,9 @@ export function claimLeafCommand(
     dispatch?.({
       type: 'update',
       leafId: leaf.id,
-      patch: { command: cmd, cwd }
+      // a pinned pane resumed into another folder is now THERE — keep the
+      // pin honest instead of letting a stale one pull the next spawn back
+      patch: leaf.folder?.trim() && cwd ? { command: cmd, cwd, folder: cwd } : { command: cmd, cwd }
     })
   })()
 }
